@@ -1,0 +1,53 @@
+[
+  {
+    "id": "mock-news-1",
+    "slug": "la-saint-andre-des-loups",
+    "title": "La Saint-André des loups",
+    "director": "Cristi Puiu",
+    "excerpt": "Cristi Puiu tourne son nouveau film à Bucarest, un thriller psychologique se déroulant dans la Roumanie des années 1940 sous occupation communiste et nazie.",
+    "content": [
+      "Bord Cadre Films est fier d'annoncer le début du tournage principal de La Saint-André des loups.",
+      "Le film suit une investigation psychologique tendue se déroulant à Bucarest, où violence privée et politique se croisent.",
+      "La production est actuellement active sur plusieurs sites historiques avec un casting et une équipe internationaux."
+    ],
+    "status": "Currently shooting",
+    "image": "/news/news-1.png",
+    "location": "Bucarest, Roumanie",
+    "publishedAt": "2026-03-14",
+    "order": 1
+  },
+  {
+    "id": "mock-news-2",
+    "slug": "sun-over-rimini",
+    "title": "Sun Over Rimini",
+    "director": "Ulrich Seidl",
+    "excerpt": "La post-production de Sun Over Rimini a débuté, avec le montage et la conception sonore partagés entre Vienne et Genève.",
+    "content": [
+      "Après la fin du tournage principal, le projet est entré en post-production.",
+      "L'équipe finalise le montage image et construit un paysage sonore pour la livraison en festival.",
+      "Le film reste sur la bonne voie pour une première internationale fin 2026."
+    ],
+    "status": "In post-production",
+    "image": "/news/news-2.png",
+    "location": "Vienne, Autriche",
+    "publishedAt": "2026-02-21",
+    "order": 2
+  },
+  {
+    "id": "mock-news-3",
+    "slug": "echoes-of-memory-premiere",
+    "title": "Echoes of Memory",
+    "director": "Apichatpong Weerasethakul",
+    "excerpt": "Echoes of Memory a été sélectionné pour une première dans un festival majeur, marquant le retour de Bord Cadre Films en sélection officielle.",
+    "content": [
+      "Echoes of Memory fera ses débuts dans une section officielle de festival ce printemps.",
+      "La sélection confirme la forte dynamique critique du film après des projections privées.",
+      "Une première vague limitée de territoires est en négociation avancée pour l'acquisition."
+    ],
+    "status": "Festival premiere",
+    "image": "/news/news-3.png",
+    "location": "Cannes, France",
+    "publishedAt": "2026-01-30",
+    "order": 3
+  }
+]

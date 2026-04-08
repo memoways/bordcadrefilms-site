@@ -1,0 +1,6 @@
+# Default owner for everything — required review on all PRs
+* @smm69
+
+# CI/CD config changes require explicit review
+.github/ @smm69
+next.config.ts @smm69

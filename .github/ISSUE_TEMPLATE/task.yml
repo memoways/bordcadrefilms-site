@@ -1,0 +1,41 @@
+name: Task / Feature
+description: New feature or sprint task
+labels: [task]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      placeholder: What needs to be built or changed?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sprint
+    attributes:
+      label: Sprint
+      options:
+        - Sprint 2 — Home CMS
+        - Sprint 3 — About components
+        - Sprint 4 — Backoffice + QA
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 — Critique
+        - P1 — Haute
+        - P2 — Moyenne
+        - P3 — Basse
+    validations:
+      required: true
+
+  - type: input
+    id: notion
+    attributes:
+      label: Notion task (optional)
+      placeholder: https://www.notion.so/...

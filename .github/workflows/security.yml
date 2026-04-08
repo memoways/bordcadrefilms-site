@@ -1,0 +1,34 @@
+name: Security
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  # Weekly scan every Monday at 08:00 UTC to catch new CVEs
+  schedule:
+    - cron: '0 8 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Fail on high or critical severity vulnerabilities only
+      # Run `npm audit fix` locally to resolve, or `npm audit` to review
+      - name: Audit dependencies
+        run: npm audit --audit-level=high

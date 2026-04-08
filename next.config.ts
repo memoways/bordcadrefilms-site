@@ -1,7 +1,27 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    // Keep prefetched route payloads warm longer for instant back-and-forth navigation.
+    staleTimes: {
+      dynamic: 300,
+      static: 900,
+    },
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "v5.airtableusercontent.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.cmsfly.com",
+        pathname: "/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

@@ -1,0 +1,56 @@
+[
+  {
+    "id": "mock-photo-1",
+    "title": "Sélection officielle Cannes 2025",
+    "description": "Projection de Echoes of Memory en sélection officielle au Festival de Cannes.",
+    "image": "/news/news-1.png",
+    "festival": "Festival de Cannes",
+    "year": "2025",
+    "order": 1
+  },
+  {
+    "id": "mock-photo-2",
+    "title": "Locarno Film Festival 2024",
+    "description": "Présence de Bord Cadre Films au Pardo d'oro lors de la 77e édition.",
+    "image": "/news/news-2.png",
+    "festival": "Locarno Film Festival",
+    "year": "2024",
+    "order": 2
+  },
+  {
+    "id": "mock-photo-3",
+    "title": "Berlinale 2024",
+    "description": "Rencontres de coproduction et présentation de projets en développement.",
+    "image": "/news/news-3.png",
+    "festival": "Berlinale",
+    "year": "2024",
+    "order": 3
+  },
+  {
+    "id": "mock-photo-4",
+    "title": "Venise 2023 — Compétition",
+    "description": "Film en compétition principale à la Mostra de Venise.",
+    "image": "/news/news-1.png",
+    "festival": "Mostra de Venise",
+    "year": "2023",
+    "order": 4
+  },
+  {
+    "id": "mock-photo-5",
+    "title": "Festival de Sundance 2023",
+    "description": "Vente internationale et rencontres avec distributeurs américains.",
+    "image": "/news/news-2.png",
+    "festival": "Sundance Film Festival",
+    "year": "2023",
+    "order": 5
+  },
+  {
+    "id": "mock-photo-6",
+    "title": "IDFA Amsterdam 2022",
+    "description": "Présentation d'un documentaire en compétition principale.",
+    "image": "/news/news-3.png",
+    "festival": "IDFA Amsterdam",
+    "year": "2022",
+    "order": 6
+  }
+]

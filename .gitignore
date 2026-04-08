@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+Thumbs.db
 
 # debug
 npm-debug.log*
@@ -30,12 +31,43 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.local.example
 
 # vercel
 .vercel
 
+# coolify
+.coolify/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Playwright
+/playwright-report/
+/test-results/
+/blob-report/
+playwright/.auth/
+
+# Claude Code / AI tooling
+.claude/
+.agents/
+.playwright-mcp/
+skills-lock.json
+
+# temp / dev artifacts
+status-showcase-next/
+
+# internal docs (not for version control)
+IMPLEMENTATION_LOG.md
+PERFORMANCE_OPTIMIZATION.md
+PROJECT_STATUS_*.md
+📋 PRD*

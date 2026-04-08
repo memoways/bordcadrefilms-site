@@ -1,0 +1,92 @@
+name: Deploy
+
+on:
+  push:
+    # main → production, develop → staging
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: production
+        type: choice
+        options: [production, staging]
+
+# Never cancel an in-flight deploy — let it finish or fail cleanly
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+# Least-privilege: read-only by default
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Pre-deploy checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+          AIRTABLE_TABLE_NAME: ${{ secrets.AIRTABLE_TABLE_NAME }}
+          AIRTABLE_VIEW_NAME: ${{ secrets.AIRTABLE_VIEW_NAME }}
+
+  deploy-production:
+    name: Deploy → Production (Coolify)
+    needs: quality
+    runs-on: ubuntu-latest
+    # Only deploy to prod from main, or manual dispatch targeting production
+    if: |
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://bordcadrefilms.com
+
+    steps:
+      - name: Trigger Coolify deploy
+        run: |
+          curl --fail --silent --show-error -X GET \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_WEBHOOK_TOKEN }}" \
+            "${{ secrets.COOLIFY_WEBHOOK_URL }}"
+
+  deploy-staging:
+    name: Deploy → Staging (Coolify)
+    needs: quality
+    runs-on: ubuntu-latest
+    # Only deploy to staging from develop, or manual dispatch targeting staging
+    if: |
+      github.ref == 'refs/heads/develop' ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: https://staging.bordcadrefilms.com
+
+    steps:
+      - name: Trigger Coolify staging deploy
+        run: |
+          curl --fail --silent --show-error -X GET \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_STAGING_WEBHOOK_TOKEN }}" \
+            "${{ secrets.COOLIFY_STAGING_WEBHOOK_URL }}"

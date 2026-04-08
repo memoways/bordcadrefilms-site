@@ -1,0 +1,6 @@
+[
+  { "number": 18, "label": "films produits", "description": "Longs et courts métrages complétés", "order": 1 },
+  { "number": 12, "label": "réalisateurs", "description": "Cinéastes accompagnés", "order": 2 },
+  { "number": 60, "label": "festivals", "description": "Sélections internationales", "order": 3 },
+  { "number": 2008, "label": "année de fondation", "description": "Plus de 15 ans d'expérience", "order": 4 }
+]
