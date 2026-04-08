@@ -66,8 +66,9 @@ skills-lock.json
 # temp / dev artifacts
 status-showcase-next/
 
-# internal docs (not for version control)
-IMPLEMENTATION_LOG.md
-PERFORMANCE_OPTIMIZATION.md
-PROJECT_STATUS_*.md
-📋 PRD*
+# Markdown — only track essential project files
+*.md
+!README.md
+!CLAUDE.md
+!AGENTS.md
+!.github/**/*.md
