@@ -8,22 +8,22 @@ import Footer from "./components/Footer";
 const suisseIntl = localFont({
   src: [
     {
-      path: "../public/fonts/desktop files/SuisseIntl-Light.otf",
+      path: "../public/fonts/SuisseIntl-Light.otf",
       weight: "300",
       style: "normal",
     },
     {
-      path: "../public/fonts/desktop files/SuisseIntl-Regular.otf",
+      path: "../public/fonts/SuisseIntl-Regular.otf",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../public/fonts/desktop files/SuisseIntl-Medium.otf",
+      path: "../public/fonts/SuisseIntl-Medium.otf",
       weight: "500",
       style: "normal",
     },
     {
-      path: "../public/fonts/desktop files/SuisseIntl-Bold.otf",
+      path: "../public/fonts/SuisseIntl-Bold.otf",
       weight: "700",
       style: "normal",
     },

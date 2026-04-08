@@ -41,6 +41,12 @@ yarn-error.log*
 # coolify
 .coolify/
 
+# Font source files — only web-ready fonts belong in public/fonts/
+# Desktop font packages, font manager exports (.rightfontlibrary, etc.)
+public/fonts/desktop*/
+public/fonts/**/*.ttf
+public/fonts/**/*.rightfontlibrary
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
