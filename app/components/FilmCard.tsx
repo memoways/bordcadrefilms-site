@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { getValidImageUrl, slugify } from "../lib/utils";
@@ -33,8 +31,8 @@ export default function FilmCard({ film }: { film: Film }) {
         )}
       </div>
       <div className="p-3 flex-1 flex flex-col gap-1">
-        <h2 className="text-base font-semibold text-zinc-900 mb-0.5 truncate" title={film.title}>{film.title}</h2>
-        <p className="text-zinc-500 text-sm truncate">{film.director || ""}</p>
+        <h2 className="text-base font-medium text-zinc-900 mb-0.5 truncate" title={film.title}>{film.title}</h2>
+        <p className="text-zinc-500 text-sm font-light truncate">{film.director || ""}</p>
       </div>
     </article>
   );
