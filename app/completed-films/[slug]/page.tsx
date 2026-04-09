@@ -1,9 +1,7 @@
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getFilms } from "../../lib/catalog";
 import FilmDetail from "../../components/FilmDetail";
-import FilmDetailSkeleton from "../../components/FilmDetailSkeleton";
 
 export const revalidate = 900;
 
@@ -41,9 +39,5 @@ async function FilmContent({ params }: { params: Promise<{ slug: string }> }) {
 }
 
 export default function Page({ params }: { params: Promise<{ slug: string }> }) {
-  return (
-    <Suspense fallback={<FilmDetailSkeleton />}>
-      <FilmContent params={params} />
-    </Suspense>
-  );
+  return <FilmContent params={params} />;
 }

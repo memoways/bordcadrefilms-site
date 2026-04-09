@@ -13,7 +13,7 @@ export const revalidate = 900;
 
 async function DirectorsContent() {
   const directors = await getDirectors();
-  return <DirectorGrid directors={directors} />;
+  return <DirectorGrid directors={directors} showBio={false} />;
 }
 
 export default function DirectorsPage() {

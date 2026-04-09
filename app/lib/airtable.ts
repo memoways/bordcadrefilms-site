@@ -4,7 +4,6 @@ import { slugify } from './utils';
 const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME!;
 const VIEW_NAME = process.env.AIRTABLE_VIEW_NAME!;
 const BASE_ID = process.env.AIRTABLE_BASE_ID!;
-const FESTIVALS_TABLE_NAME = process.env.AIRTABLE_FESTIVALS_TABLE_NAME || 'festivals';
 
 export type Film = {
   slug: string;
@@ -31,6 +30,14 @@ export type Film = {
   directorFilmography?: string;
   duration?: string;
   nations?: string;
+  quoteEN?: string;
+  quoteFR?: string;
+  festivalLogoUrl?: string;
+  crewComplete?: string;
+  production?: string[];
+  coproduction?: string[];
+  premiereDate?: string;
+  mainUrl?: string;
 };
 
 type AirtableFieldMap = Record<string, unknown>;
@@ -71,44 +78,6 @@ function collectTextValues(value: unknown): string[] {
 function joinTextValues(value: unknown): string | undefined {
   const text = collectTextValues(value).join('\n').trim();
   return text || undefined;
-}
-
-function isAirtableRecordId(value: string): boolean {
-  return /^rec[a-zA-Z0-9]+$/.test(value);
-}
-
-function getDisplayText(fields: AirtableFieldMap): string | undefined {
-  const preferredKeys = ['title', 'Title', 'name', 'Name', 'festival', 'Festival', 'label', 'Label', 'festival_name', 'Festival Name', 'festivalName'];
-
-  for (const key of preferredKeys) {
-    const text = joinTextValues(fields[key]);
-    if (text && !isAirtableRecordId(text)) return text;
-  }
-
-  for (const value of Object.values(fields)) {
-    const text = joinTextValues(value);
-    if (text && !isAirtableRecordId(text)) return text;
-  }
-
-  return undefined;
-}
-
-function resolveLinkedText(value: unknown, byId: Map<string, string>): string | undefined {
-  const tokens = collectTextValues(value);
-  if (tokens.length === 0) return undefined;
-
-  const resolved = tokens
-    .map((token) => {
-      const trimmed = token.trim();
-      if (!trimmed) return undefined;
-      const lookup = byId.get(trimmed);
-      if (lookup) return lookup;
-      if (isAirtableRecordId(trimmed)) return undefined;
-      return trimmed;
-    })
-    .filter((item): item is string => Boolean(item));
-
-  return resolved.length > 0 ? resolved.join('\n') : undefined;
 }
 
 async function fetchAirtableRecords(tableName: string, revalidateTag: string): Promise<AirtableRecord[]> {
@@ -215,7 +184,7 @@ export const readAirtableFilms = cache(async function (): Promise<Film[]> {
         status: firstString(f['Status Table']) || undefined,
         publish: firstString(f['Publish']) || undefined,
         category: firstString(f['Category']) || undefined,
-        awards: joinTextValues(f['Festival and Awards']) || undefined,
+        awards: joinTextValues(f['Festival and Awards Name EN']) || joinTextValues(f['Festival and Awards Name FR']) || undefined,
         imdb: stringOrValue(f['IMDB page']) || undefined,
         team: firstString(f['Team (People Table)']) || undefined,
         images: allImageUrls(f['Pictures (published) - Movie']) || [],
@@ -239,6 +208,14 @@ export const readAirtableFilms = cache(async function (): Promise<Film[]> {
           undefined,
         duration: (typeof f['Film Duration hmm'] === 'number' ? f['Film Duration hmm'].toString() : firstString(f['Film Duration hmm'])) || undefined,
         nations: firstString(f['NationsFullNameFR (from Countries (Linked Record))']) || undefined,
+        quoteEN: firstString(f['Quote EN']) || undefined,
+        quoteFR: firstString(f['Quote FR']) || undefined,
+        festivalLogoUrl: firstImageUrl(f['Festival Organization Logo']) || undefined,
+        crewComplete: firstString(f['CrewComplete (from Crew)']) || undefined,
+        production: Array.isArray(f['Production']) ? (f['Production'] as unknown[]).map(v => typeof v === 'string' ? v.trim() : '').filter(Boolean) : undefined,
+        coproduction: Array.isArray(f['Co-production']) ? (f['Co-production'] as unknown[]).map(v => typeof v === 'string' ? v.trim() : '').filter(Boolean) : undefined,
+        premiereDate: firstString(f['Premier date']) || firstString(f['World Premiere']) || undefined,
+        mainUrl: firstString(f['Main url']) || undefined,
       };
     });
 

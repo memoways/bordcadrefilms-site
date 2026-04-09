@@ -80,7 +80,7 @@ export const readHeroVideo = cache(async function readHeroVideo(): Promise<HeroV
     });
 
     if (!res.ok) {
-      throw new Error(`Airtable hero request failed with status ${res.status}`);
+      return MOCK_HERO;
     }
 
     const data = (await res.json()) as {
@@ -92,7 +92,6 @@ export const readHeroVideo = cache(async function readHeroVideo(): Promise<HeroV
 
     return normalizeHero(fields);
   } catch (error) {
-    console.error("[Airtable] Hero fetch error:", error);
     return MOCK_HERO;
   }
 });

@@ -1,5 +1,6 @@
 import { cache } from "react";
-import { readAirtableFilms, type Film } from "./airtable";
+import { readAirtableFilms, type Film } from "@/app/lib/airtable";
+import { slugify } from "./utils";
 
 export type { Film };
 
@@ -9,6 +10,7 @@ export type { Film };
  * Fields unrelated to the director's identity are typed as optional to reflect this.
  */
 export type Director = {
+  slug: string;
   name: string;
   bio?: string;
   profilePicture?: string;
@@ -28,6 +30,7 @@ export const getDirectors = cache(async (): Promise<Director[]> => {
     const name = film.director?.trim();
     if (name && !seen.has(name)) {
       seen.set(name, {
+        slug: slugify(name),
         name,
         bio: film.bio,
         profilePicture: film.profilePicture,
