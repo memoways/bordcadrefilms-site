@@ -80,8 +80,8 @@ export async function generateMetadata({
 	const director = await getDirectorBySlug(slug);
 
 	return {
-		title: director ? `${director.name} — Bord Cadre Films` : "Réalisateur — Bord Cadre Films",
-		description: director?.bio || "Fiche réalisateur Bord Cadre Films",
+		title: director ? `${director.name} — Bord Cadre Films` : "Director — Bord Cadre Films",
+		description: director?.bio || "Director profile — Bord Cadre Films",
 	};
 }
 
@@ -109,7 +109,7 @@ export default async function DirectorDetailPage({
 							{director.profilePicture ? (
 								<Image
 									src={director.profilePicture}
-									alt={`Portrait de ${director.name}`}
+									alt={director.name}
 									width={176}
 									height={176}
 									className="h-full w-full object-cover"
@@ -128,7 +128,7 @@ export default async function DirectorDetailPage({
 								<h1 className="text-4xl font-light leading-tight md:text-5xl">{director.name}</h1>
 								{director.origin && (
 									<p className="text-lg text-zinc-300">
-										<span className="font-medium text-white">Origine :</span> {director.origin}
+										<span className="font-medium text-white">Origin:</span> {director.origin}
 									</p>
 								)}
 							</div>
@@ -146,10 +146,10 @@ export default async function DirectorDetailPage({
 			<section className="bg-[#ECECEC]">
 				<div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:px-8 lg:py-12">
 					<div className="mb-8 text-center">
-						<p className="text-base text-zinc-500">Dernières</p>
+						<p className="text-base text-zinc-500">Latest</p>
 						<div className="mt-1 flex items-center justify-center gap-6">
 							<span className="h-px w-24 bg-accent sm:w-40 lg:w-60" />
-							<h2 className="text-4xl font-light text-zinc-900">Actualités</h2>
+							<h2 className="text-4xl font-light text-zinc-900">News</h2>
 							<span className="h-px w-24 bg-accent sm:w-40 lg:w-60" />
 						</div>
 					</div>
@@ -185,7 +185,7 @@ export default async function DirectorDetailPage({
 										<p className="mt-1 line-clamp-2 text-base leading-snug text-zinc-800">
 											{entry.description}
 										</p>
-										<p className="mt-2 text-sm text-zinc-500">Date de publication</p>
+										<p className="mt-2 text-sm text-zinc-500">Publication date</p>
 									</div>
 								</Link>
 							</article>
@@ -197,7 +197,7 @@ export default async function DirectorDetailPage({
 							href="/news"
 							className="inline-flex items-center rounded-md px-4 py-2 text-sm font-semibold transition brand-btn-primary"
 						>
-							Toutes les actualités
+							All news
 						</Link>
 					</div>
 				</div>

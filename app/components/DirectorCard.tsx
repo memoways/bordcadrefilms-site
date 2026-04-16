@@ -3,7 +3,7 @@ import Link from "next/link";
 import { type Director } from "../lib/catalog";
 import { getValidImageUrl } from "../lib/utils";
 
-export default function DirectorCard({ director, showBio = true }: { director: Director; showBio?: boolean }) {
+export default function DirectorCard({ director, showBio = true, priority = false }: { director: Director; showBio?: boolean; priority?: boolean }) {
   const imgUrl = getValidImageUrl(director.profilePicture);
   return (
     <Link
@@ -16,11 +16,11 @@ export default function DirectorCard({ director, showBio = true }: { director: D
           {imgUrl ? (
             <Image
               src={imgUrl}
-              alt={`Photo de ${director.name}`}
+              alt={director.name}
               fill
               className="object-cover rounded-full"
               sizes="128px"
-              priority
+              priority={priority}
             />
           ) : (
             <div className="w-32 h-32 bg-zinc-100 flex items-center justify-center text-zinc-500 rounded-full">

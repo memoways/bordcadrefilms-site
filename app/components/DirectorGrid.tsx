@@ -14,8 +14,8 @@ export default function DirectorGrid({
 
   return (
     <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full">
-      {displayed.map((director) => (
-        <DirectorCard key={director.slug} director={director} showBio={showBio} />
+      {displayed.map((director, index) => (
+        <DirectorCard key={director.slug} director={director} showBio={showBio} priority={index === 0} />
       ))}
     </section>
   );

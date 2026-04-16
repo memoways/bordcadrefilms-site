@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getValidImageUrl } from "../lib/utils";
+import { getValidImageUrl, safeExternalUrl } from "../lib/utils";
 import { type Film } from "@/app/lib/airtable";
 import GalleryCarousel from "./GalleryCarousel";
 
@@ -98,7 +98,7 @@ export default function FilmDetail({ film }: { film: Film }) {
   const filmYear = film.year || "";
   const filmCountry = film.country || "";
   const filmAwards = film.awards || "";
-  const filmImdb = film.imdb || "";
+  const filmImdb = safeExternalUrl(film.imdb) ?? "";
   const filmDuration = formatDurationLabel(film.duration);
   const posterUrl = getValidImageUrl(film.poster);
   const directorImageUrl = getValidImageUrl(film.profilePicture);
@@ -110,7 +110,7 @@ export default function FilmDetail({ film }: { film: Film }) {
   const production = film.production || [];
   const coproduction = film.coproduction || [];
   const premiereDate = film.premiereDate || "";
-  const mainUrl = film.mainUrl || "";
+  const mainUrl = safeExternalUrl(film.mainUrl) ?? "";
   const genres = splitList(film.genres);
   const awardsList = splitAwards(filmAwards);
   const recentFilmography = parseFilmographyEntries(filmography)
@@ -145,7 +145,7 @@ export default function FilmDetail({ film }: { film: Film }) {
   const metaParts: string[] = [
     filmCountry,
     filmYear,
-    filmDuration ? `Durée ${filmDuration}` : "",
+    filmDuration ? `${filmDuration}` : "",
   ].filter(Boolean);
 
   return (
@@ -160,7 +160,7 @@ export default function FilmDetail({ film }: { film: Film }) {
                 <div className="overflow-hidden rounded-[10px] border-2 border-[#F4F4F4] shadow-[10px_10px_10px_#8E8E8E33]">
                   <Image
                     src={posterUrl}
-                    alt={`Affiche du film ${title}`}
+                    alt={`Film poster — ${title}`}
                     width={900}
                     height={1332}
                     className="h-auto w-full object-cover"
@@ -173,11 +173,11 @@ export default function FilmDetail({ film }: { film: Film }) {
 
             <div className="flex min-w-0 w-full max-w-none justify-self-stretch flex-col gap-5 self-start sm:gap-6 lg:px-0 xl:px-2 2xl:px-4">
               <div className="space-y-3 sm:space-y-4">
-                <p className="text-xs font-medium tracking-[0.24em] text-white/50 uppercase">Fiche film</p>
+                <p className="text-xs font-medium tracking-[0.24em] text-white/50 uppercase">Film</p>
                 <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl md:text-5xl lg:leading-[1.05]">{title}</h1>
                 {directorName && (
                   <p className="text-base text-white/80 md:text-lg">
-                    Réalisé par <span className="underline decoration-white/30 decoration-1 underline-offset-4">{directorName}</span>
+                    Directed by <span className="underline decoration-white/30 decoration-1 underline-offset-4">{directorName}</span>
                   </p>
                 )}
                 {metaParts.length > 0 && <p className="text-sm tracking-wide text-white/60">{metaParts.join("  |  ")}</p>}
@@ -209,7 +209,7 @@ export default function FilmDetail({ film }: { film: Film }) {
             {hasAwards && (
               <aside className="mx-auto w-full max-w-75 self-center justify-self-center rounded-3xl border border-[#E0A75D]/70 bg-[#171717] p-5 shadow-[0_28px_70px_-42px_rgba(0,0,0,0.8)] sm:p-6 lg:p-7">
                 <p className="mb-5 text-center text-xs font-medium uppercase tracking-[0.2em] text-[#F6DCA0] sm:tracking-[0.24em]">
-                  Festivals &amp; Récompenses
+                  Festivals &amp; Awards
                 </p>
                 {festivalLogoUrl && (
                   <div className="mb-5 flex justify-center">
@@ -248,7 +248,7 @@ export default function FilmDetail({ film }: { film: Film }) {
               <p className="leading-relaxed text-zinc-700">{synopsis}</p>
               {filmImdb && (
                 <p className="text-sm text-zinc-500">
-                  Site officiel{" "}
+                  Official website{" "}
                   <a href={filmImdb} target="_blank" rel="noreferrer" className="text-[#E0A75D] underline underline-offset-2">
                     {filmImdb}
                   </a>
@@ -269,15 +269,15 @@ export default function FilmDetail({ film }: { film: Film }) {
               <div>
                 <h3 className="mb-4 flex items-center gap-3 text-lg font-bold text-zinc-900">
                   <span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
-                  Equipe
+                  Cast &amp; Crew
                 </h3>
                 <dl className="space-y-1.5 text-sm text-zinc-700">
-                  {crew['Stars'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Casting :</dt><dd>{crew['Stars']}</dd></div>}
-                  {crew['Cinematography'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Image :</dt><dd>{crew['Cinematography']}</dd></div>}
-                  {(crew['Sound Design'] || crew['Sound']) && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Son :</dt><dd>{crew['Sound Design'] || crew['Sound']}</dd></div>}
-                  {crew['Editor'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Editeur :</dt><dd>{crew['Editor']}</dd></div>}
-                  {crew['Music'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Musique :</dt><dd>{crew['Music']}</dd></div>}
-                  {crew['Producers'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Producteurs :</dt><dd>{crew['Producers']}</dd></div>}
+                  {crew['Stars'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Cast:</dt><dd>{crew['Stars']}</dd></div>}
+                  {crew['Cinematography'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Cinematography:</dt><dd>{crew['Cinematography']}</dd></div>}
+                  {(crew['Sound Design'] || crew['Sound']) && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Sound:</dt><dd>{crew['Sound Design'] || crew['Sound']}</dd></div>}
+                  {crew['Editor'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Editor:</dt><dd>{crew['Editor']}</dd></div>}
+                  {crew['Music'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Music:</dt><dd>{crew['Music']}</dd></div>}
+                  {crew['Producers'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Producers:</dt><dd>{crew['Producers']}</dd></div>}
                 </dl>
               </div>
             )}
@@ -287,24 +287,24 @@ export default function FilmDetail({ film }: { film: Film }) {
               <div>
                 <h3 className="mb-4 flex items-center gap-3 text-lg font-bold text-zinc-900">
                   <span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
-                  Production &amp; distribution
+                  Production &amp; Distribution
                 </h3>
                 <dl className="space-y-1.5 text-sm text-zinc-700">
                   {production.length > 0 && (
                     <div className="flex gap-1">
-                      <dt className="font-semibold text-zinc-900 shrink-0">Production :</dt>
+                      <dt className="font-semibold text-zinc-900 shrink-0">Production:</dt>
                       <dd>{production.join(", ")}</dd>
                     </div>
                   )}
                   {coproduction.length > 0 && (
                     <div className="flex gap-1">
-                      <dt className="font-semibold text-zinc-900 shrink-0">Co-production :</dt>
+                      <dt className="font-semibold text-zinc-900 shrink-0">Co-production:</dt>
                       <dd>{coproduction.join(", ")}</dd>
                     </div>
                   )}
                   {crew['World sales'] && (
                     <div className="flex gap-1">
-                      <dt className="font-semibold text-zinc-900 shrink-0">Ventes mondiales :</dt>
+                      <dt className="font-semibold text-zinc-900 shrink-0">World sales:</dt>
                       <dd>{crew['World sales']}</dd>
                     </div>
                   )}
@@ -317,18 +317,18 @@ export default function FilmDetail({ film }: { film: Film }) {
               <div>
                 <h3 className="mb-4 flex items-center gap-3 text-lg font-bold text-zinc-900">
                   <span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
-                  Informations techniques
+                  Technical details
                 </h3>
                 <dl className="space-y-1.5 text-sm text-zinc-700">
-                  {filmCountry && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Pays :</dt><dd>{filmCountry}</dd></div>}
-                  {premiereDate && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Date :</dt><dd>{premiereDate}</dd></div>}
-                  {filmDuration && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Durée :</dt><dd>{filmDuration}</dd></div>}
+                  {filmCountry && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Country:</dt><dd>{filmCountry}</dd></div>}
+                  {premiereDate && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Premiere:</dt><dd>{premiereDate}</dd></div>}
+                  {filmDuration && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Duration:</dt><dd>{filmDuration}</dd></div>}
                 </dl>
                 {(mainUrl || filmImdb) && (
                   <div className="mt-4 flex items-center gap-3">
                     {mainUrl && (
                       <a href={mainUrl} target="_blank" rel="noreferrer" className="text-sm text-zinc-500 underline underline-offset-2 hover:text-zinc-800">
-                        Plus d&apos;informations
+                        More information
                       </a>
                     )}
                     {filmImdb && (
@@ -354,7 +354,7 @@ export default function FilmDetail({ film }: { film: Film }) {
       {/* ── Gallery ── */}
       {galleryImages.length > 0 && (
         <section className="mt-10 bg-[#1C1C1C] px-4 py-10 sm:px-6 md:px-8 lg:mt-12 lg:px-16 lg:py-12">
-          <h3 className="mb-4 border-b border-white/20 pb-2 text-xl font-bold text-white">Galerie</h3>
+          <h3 className="mb-4 border-b border-white/20 pb-2 text-xl font-bold text-white">Gallery</h3>
           <GalleryCarousel images={galleryImages} title={title} />
         </section>
       )}
@@ -384,7 +384,7 @@ export default function FilmDetail({ film }: { film: Film }) {
                 {recentFilmography.length > 0 && (
                   <div className="h-50 w-full overflow-hidden rounded-[10px] bg-[#FFFFFFCC] px-5 py-4">
                     <div className="mb-3 flex items-center gap-3">
-                      <span className="text-sm font-bold text-zinc-900">Filmographie</span>
+                      <span className="text-sm font-bold text-zinc-900">Filmography</span>
                       <span className="h-px flex-1 bg-[#C0392B]" />
                     </div>
                     <ul className="space-y-1.5 text-sm text-zinc-800">
@@ -400,7 +400,7 @@ export default function FilmDetail({ film }: { film: Film }) {
                       href={directorFilmsHref}
                       className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-zinc-900 hover:underline"
                     >
-                      Tous les films <span aria-hidden>→</span>
+                      All films <span aria-hidden>→</span>
                     </Link>
                   </div>
                 )}
@@ -409,7 +409,7 @@ export default function FilmDetail({ film }: { film: Film }) {
               {/* Right col — director's words */}
               {directorWordsEnglish && (
                 <div className="min-w-0 flex-1">
-                  <h4 className="mb-4 text-xl font-bold text-zinc-900">Les mots du cinéaste</h4>
+                  <h4 className="mb-4 text-xl font-bold text-zinc-900">Director&apos;s statement</h4>
                   <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-700">{directorWordsEnglish}</p>
                   {directorName && (
                     <p className="mt-5 text-sm font-bold text-zinc-900">{directorName}</p>

@@ -3,12 +3,12 @@ import Link from "next/link";
 import { getValidImageUrl, slugify } from "../lib/utils";
 import type { Film } from "../lib/airtable";
 
-export default function FilmCard({ film }: { film: Film }) {
+export default function FilmCard({ film, priority = false }: { film: Film; priority?: boolean }) {
   const imgUrl = getValidImageUrl(film.poster);
   // Always generate a fallback slug from title if missing
   const filmSlug = film.slug || (film.title ? slugify(film.title) : undefined);
   const filmUrl = filmSlug ? `/completed-films/${filmSlug}` : undefined;
-  const altText = film.title ? `Affiche du film ${film.title}` : "Affiche de film";
+  const altText = film.title ? `Film poster — ${film.title}` : "Film poster";
   const CardContent = (
     <article
       className={`bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden flex flex-col transition-all duration-200 ${filmUrl ? "cursor-pointer hover:shadow-md hover:-translate-y-1" : "opacity-70 cursor-default"}`}
@@ -22,8 +22,7 @@ export default function FilmCard({ film }: { film: Film }) {
             fill
             className="object-contain"
             sizes="(max-width: 768px) 100vw, 33vw"
-            loading="lazy"
-            priority={false}
+            priority={priority}
             style={{ objectFit: "contain", background: "#f4f4f5" }}
           />
         ) : (
@@ -37,7 +36,7 @@ export default function FilmCard({ film }: { film: Film }) {
     </article>
   );
   return filmUrl ? (
-    <Link href={filmUrl} prefetch={true} tabIndex={0} aria-label={`Voir la fiche du film ${film.title}`} className="block focus:outline-none focus:ring-2 focus:ring-zinc-400 rounded-xl">
+    <Link href={filmUrl} prefetch={true} tabIndex={0} aria-label={`View film details — ${film.title}`} className="block focus:outline-none focus:ring-2 focus:ring-zinc-400 rounded-xl">
       {CardContent}
     </Link>
   ) : (

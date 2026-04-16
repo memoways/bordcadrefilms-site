@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getFilms } from "../../lib/catalog";
 import FilmDetail from "../../components/FilmDetail";
+import FilmDetailSkeleton from "../../components/FilmDetailSkeleton";
 
 export const revalidate = 900;
 
@@ -22,6 +24,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  // getFilms() is wrapped in React cache() — same request as the page body
+  // shares the result, so this does NOT trigger a second Airtable fetch.
   const films = await getFilms();
   const film = films.find((f) => normalizeSlug(f.slug) === normalizeSlug(slug));
   return {
@@ -30,14 +34,22 @@ export async function generateMetadata({
   };
 }
 
-async function FilmContent({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+async function FilmContent({ slug }: { slug: string }) {
   const films = await getFilms();
   const film = films.find((f) => normalizeSlug(f.slug) === normalizeSlug(slug));
   if (!film) return notFound();
   return <FilmDetail film={film} />;
 }
 
-export default function Page({ params }: { params: Promise<{ slug: string }> }) {
-  return <FilmContent params={params} />;
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  return (
+    <Suspense fallback={<FilmDetailSkeleton />}>
+      <FilmContent slug={slug} />
+    </Suspense>
+  );
 }

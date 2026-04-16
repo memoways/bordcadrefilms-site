@@ -5,8 +5,8 @@ import FilmGridSkeleton from "../components/FilmGridSkeleton";
 import { getFilms } from "../lib/catalog";
 
 export const metadata: Metadata = {
-  title: "Films produits — Bord Cadre Films",
-  description: "Découvrez les films produits par Bord Cadre Films, société de production cinématographique basée à Genève.",
+  title: "Films — Bord Cadre Films",
+  description: "Discover films produced by Bord Cadre Films, an independent production company based in Geneva.",
 };
 
 export const revalidate = 900;
@@ -32,7 +32,7 @@ export default async function CompletedFilmsPage({
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground px-4 py-16">
       <div className="max-w-6xl w-full flex flex-col gap-8 items-center">
-        <h1 className="text-3xl font-bold mb-8">Films produits</h1>
+        <h1 className="text-3xl font-bold mb-8">Films</h1>
         <Suspense fallback={<FilmGridSkeleton />}>
           <FilmsContentWithSearch initialSearch={initialSearch} />
         </Suspense>
