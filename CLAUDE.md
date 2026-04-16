@@ -85,6 +85,6 @@ Do not assume generic Next.js behavior. This project already has custom caching,
 - Inspect the actual route, helper, or component before editing.
 - Prefer the smallest focused fix over a broad refactor.
 - If the request touches multiple surfaces, update the source, consumer, and docs together.
-
+mcp__serena__activate_project project="."
 @AGENTS.md
 
