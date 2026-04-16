@@ -1,11 +1,11 @@
 import { cache } from "react";
+import { firstString, getValidImageUrl } from "./utils";
 import { MOCK_HERO } from "./mock-data";
 
-const HERO_TABLE_NAME = process.env.AIRTABLE_HERO_TABLE_NAME || "HeroVideo";
-const HERO_VIEW_NAME = process.env.AIRTABLE_HERO_VIEW_NAME;
+// Hero content lives as a row in the shared SiteConfig table ({section} = "hero")
+const HERO_TABLE_NAME = "SiteConfig";
 const HERO_REVALIDATE_SECONDS = 3600;
 
-type AirtableAttachment = { url?: unknown };
 type AirtableFields = Record<string, unknown>;
 
 export type HeroVideoData = {
@@ -16,41 +16,23 @@ export type HeroVideoData = {
   source: "airtable" | "fallback";
 };
 
-function firstString(value: unknown): string | undefined {
-  if (typeof value === "string" && value.trim()) return value.trim();
-  if (Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) {
-    return value[0].trim();
-  }
-  return undefined;
-}
-
-function firstAttachmentUrl(value: unknown): string | undefined {
-  if (!Array.isArray(value) || value.length === 0) return undefined;
-
-  const first = value[0] as AirtableAttachment;
-  if (typeof first?.url === "string" && first.url.trim()) return first.url.trim();
-
-  return undefined;
-}
-
 function normalizeHero(fields: AirtableFields): HeroVideoData {
   const videoUrl =
+    firstString(fields.video_url) ||
     firstString(fields.videoUrl) ||
     firstString(fields["Video URL"]) ||
     firstString(fields.video) ||
-    firstAttachmentUrl(fields.videoFile) ||
-    firstAttachmentUrl(fields["Video File"]) ||
-    firstAttachmentUrl(fields.videoAttachment) ||
-    firstAttachmentUrl(fields["Video Attachment"]) ||
+    getValidImageUrl(fields.videoFile) ||
+    getValidImageUrl(fields["Video File"]) ||
     MOCK_HERO.videoUrl;
 
   const posterUrl =
+    firstString(fields.poster_url) ||
     firstString(fields.posterUrl) ||
     firstString(fields["Poster URL"]) ||
-    firstAttachmentUrl(fields.poster) ||
-    firstAttachmentUrl(fields["Poster"]) ||
-    firstAttachmentUrl(fields.posterFile) ||
-    firstAttachmentUrl(fields["Poster File"]) ||
+    getValidImageUrl(fields.poster) ||
+    getValidImageUrl(fields["Poster"]) ||
+    getValidImageUrl(fields.posterFile) ||
     MOCK_HERO.posterUrl;
 
   const title = firstString(fields.title) || firstString(fields["Hero Title"]) || MOCK_HERO.title;
@@ -60,23 +42,22 @@ function normalizeHero(fields: AirtableFields): HeroVideoData {
 }
 
 export const readHeroVideo = cache(async function readHeroVideo(): Promise<HeroVideoData> {
-  const baseId = process.env.AIRTABLE_BASE_ID;
+  const baseId = process.env.AIRTABLE_CMS_BASE_ID || process.env.AIRTABLE_BASE_ID;
   const apiKey = process.env.AIRTABLE_API_KEY;
 
   if (!baseId || !apiKey) {
     return MOCK_HERO;
   }
 
+  // Fetch all SiteConfig rows — no filterByFormula so the URL is stable
+  // and Next.js fetch cache can be shared across hero/home/founder callers.
   const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(HERO_TABLE_NAME)}`);
-  url.searchParams.set("maxRecords", "1");
-  if (HERO_VIEW_NAME) {
-    url.searchParams.set("view", HERO_VIEW_NAME);
-  }
+  url.searchParams.set("maxRecords", "10");
 
   try {
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${apiKey}` },
-      next: { revalidate: HERO_REVALIDATE_SECONDS, tags: ["hero-video"] },
+      next: { revalidate: HERO_REVALIDATE_SECONDS, tags: ["site-config"] },
     });
 
     if (!res.ok) {
@@ -87,7 +68,9 @@ export const readHeroVideo = cache(async function readHeroVideo(): Promise<HeroV
       records?: Array<{ fields?: AirtableFields }>;
     };
 
-    const fields = data.records?.[0]?.fields;
+    const fields = data.records?.find(
+      (r) => typeof r.fields?.section === "string" && r.fields.section === "hero"
+    )?.fields;
     if (!fields) return MOCK_HERO;
 
     return normalizeHero(fields);

@@ -1,7 +1,8 @@
 import { cache } from "react";
-import { MOCK_FOUNDER, MOCK_TEAM, MOCK_FESTIVAL_PHOTOS } from "./mock-data";
+import { firstString, getValidImageUrl } from "./utils";
+import { MOCK_FOUNDER, MOCK_FESTIVAL_PHOTOS } from "./mock-data";
 
-const BASE_ID = process.env.AIRTABLE_BASE_ID!;
+const BASE_ID = (process.env.AIRTABLE_CMS_BASE_ID || process.env.AIRTABLE_BASE_ID)!;
 const API_KEY = process.env.AIRTABLE_API_KEY!;
 
 export type FounderBioData = {
@@ -47,33 +48,20 @@ function fallbackBio(): FounderBioData {
   return MOCK_FOUNDER;
 }
 
-function stringOrUndefined(v: unknown): string | undefined {
-  if (typeof v === "string") return v.trim();
-  if (Array.isArray(v) && typeof v[0] === "string") return v[0].trim();
-  return undefined;
-}
-
-function firstImageUrl(v: unknown): string | undefined {
-  if (!Array.isArray(v) || v.length === 0) return undefined;
-  const first = v[0] as { url?: unknown };
-  if (typeof first.url === "string") return first.url;
-  return undefined;
-}
-
 export const readFounderBio = cache(async function readFounderBio(): Promise<FounderBioData> {
   if (!BASE_ID || !API_KEY) return fallbackBio();
 
   try {
+    // Fetch all SiteConfig rows — no filterByFormula so the URL is stable
+    // and Next.js fetch cache can be shared across hero/home/founder callers.
     const url = new URL(
-      `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-        process.env.AIRTABLE_FOUNDER_TABLE || "Founder"
-      )}`
+      `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent("SiteConfig")}`
     );
-    url.searchParams.set("maxRecords", "1");
+    url.searchParams.set("maxRecords", "10");
 
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${API_KEY}` },
-      next: { revalidate: 86400, tags: ["founder-bio"] },
+      next: { revalidate: 86400, tags: ["site-config"] },
     });
 
     if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -82,14 +70,16 @@ export const readFounderBio = cache(async function readFounderBio(): Promise<Fou
       records?: Array<{ fields?: Record<string, unknown> }>;
     };
 
-    const fields = data.records?.[0]?.fields;
+    const fields = data.records?.find(
+      (r) => typeof r.fields?.section === "string" && r.fields.section === "founder"
+    )?.fields;
     if (!fields) return fallbackBio();
 
     return {
-      name: stringOrUndefined(fields.name) || "Bord Cadre Films",
-      title: stringOrUndefined(fields.title) || "Fondateur",
-      bio: stringOrUndefined(fields.bio) || fallbackBio().bio,
-      image: firstImageUrl(fields.image),
+      name: firstString(fields.name) || "Bord Cadre Films",
+      title: firstString(fields.title) || "Fondateur",
+      bio: firstString(fields.bio) || fallbackBio().bio,
+      image: getValidImageUrl(fields.image),
       source: "airtable",
     };
   } catch (error) {
@@ -100,7 +90,7 @@ export const readFounderBio = cache(async function readFounderBio(): Promise<Fou
 
 export const readTeam = cache(async function readTeam(): Promise<TeamResponse> {
   if (!BASE_ID || !API_KEY) {
-    return { members: MOCK_TEAM, total: MOCK_TEAM.length, source: "fallback" };
+    return { members: [], total: 0, source: "airtable" };
   }
 
   try {
@@ -122,16 +112,16 @@ export const readTeam = cache(async function readTeam(): Promise<TeamResponse> {
     };
 
     if (!data.records || data.records.length === 0) {
-      return { members: MOCK_TEAM, total: MOCK_TEAM.length, source: "fallback" };
+      return { members: [], total: 0, source: "airtable" };
     }
 
     const members: TeamMemberData[] = data.records
       .map((record, idx) => ({
         id: record.id,
-        name: stringOrUndefined(record.fields?.name) || `Member ${idx + 1}`,
-        role: stringOrUndefined(record.fields?.role) || "Team Member",
-        bio: stringOrUndefined(record.fields?.bio),
-        image: firstImageUrl(record.fields?.image),
+        name: firstString(record.fields?.name) || `Member ${idx + 1}`,
+        role: firstString(record.fields?.role) || "Team Member",
+        bio: firstString(record.fields?.bio),
+        image: getValidImageUrl(record.fields?.image),
         order: typeof record.fields?.order === "number" ? record.fields.order : idx + 1,
       }))
       .sort((a, b) => a.order - b.order);
@@ -143,7 +133,7 @@ export const readTeam = cache(async function readTeam(): Promise<TeamResponse> {
     };
   } catch (error) {
     console.error("[Airtable] Team fetch error:", error);
-    return { members: MOCK_TEAM, total: MOCK_TEAM.length, source: "fallback" };
+    return { members: [], total: 0, source: "airtable" };
   }
 });
 
@@ -177,11 +167,11 @@ export const readFestivalPhotos = cache(async function readFestivalPhotos(): Pro
     const photos: FestivalPhotoData[] = data.records
       .map((record, idx) => ({
         id: record.id,
-        title: stringOrUndefined(record.fields?.title) || "Festival Photo",
-        description: stringOrUndefined(record.fields?.description),
-        image: firstImageUrl(record.fields?.image) || "/festival/placeholder.png",
-        festival: stringOrUndefined(record.fields?.festival),
-        year: stringOrUndefined(record.fields?.year),
+        title: firstString(record.fields?.title) || "Festival Photo",
+        description: firstString(record.fields?.description),
+        image: getValidImageUrl(record.fields?.image) || "/festival/placeholder.png",
+        festival: firstString(record.fields?.festival),
+        year: firstString(record.fields?.year),
         order: typeof record.fields?.order === "number" ? record.fields.order : idx + 1,
       }))
       .sort((a, b) => a.order - b.order);

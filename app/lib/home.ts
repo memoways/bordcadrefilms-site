@@ -1,7 +1,8 @@
 import { cache } from "react";
+import { firstString, getValidImageUrl } from "./utils";
 import { MOCK_HOME_ABOUT, MOCK_BCF_NUMBERS, MOCK_NEWS } from "./mock-data";
 
-const BASE_ID = process.env.AIRTABLE_BASE_ID!;
+const BASE_ID = (process.env.AIRTABLE_CMS_BASE_ID || process.env.AIRTABLE_BASE_ID)!;
 const API_KEY = process.env.AIRTABLE_API_KEY!;
 
 export type HomeAboutData = {
@@ -55,16 +56,16 @@ export const readHomeAbout = cache(async function readHomeAbout(): Promise<HomeA
   if (!BASE_ID || !API_KEY) return fallbackAbout();
 
   try {
+    // Fetch all SiteConfig rows — no filterByFormula so the URL is stable
+    // and Next.js fetch cache can be shared across hero/home/founder callers.
     const url = new URL(
-      `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-        process.env.AIRTABLE_HOME_ABOUT_TABLE || "HomeAbout"
-      )}`
+      `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent("SiteConfig")}`
     );
-    url.searchParams.set("maxRecords", "1");
+    url.searchParams.set("maxRecords", "10");
 
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${API_KEY}` },
-      next: { revalidate: 3600, tags: ["home-about"] },
+      next: { revalidate: 3600, tags: ["site-config"] },
     });
 
     if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -73,14 +74,10 @@ export const readHomeAbout = cache(async function readHomeAbout(): Promise<HomeA
       records?: Array<{ fields?: Record<string, unknown> }>;
     };
 
-    const fields = data.records?.[0]?.fields;
+    const fields = data.records?.find(
+      (r) => typeof r.fields?.section === "string" && r.fields.section === "home_about"
+    )?.fields;
     if (!fields) return fallbackAbout();
-
-    const firstString = (v: unknown): string | undefined => {
-      if (typeof v === "string") return v.trim();
-      if (Array.isArray(v) && typeof v[0] === "string") return v[0].trim();
-      return undefined;
-    };
 
     return {
       title: firstString(fields.title) || "Bord Cadre Films",
@@ -156,8 +153,8 @@ export const readHomeNews = cache(async function readHomeNews(
       )}`
     );
     url.searchParams.set("maxRecords", limit.toString());
-    url.searchParams.set("sort[]field", "publishedAt");
-    url.searchParams.set("sort[]direction", "desc");
+    url.searchParams.set("sort[0][field]", "publishedAt");
+    url.searchParams.set("sort[0][direction]", "desc");
 
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${API_KEY}` },
@@ -170,26 +167,13 @@ export const readHomeNews = cache(async function readHomeNews(
       records?: Array<{ id: string; fields?: Record<string, unknown> }>;
     };
 
-    const firstString = (v: unknown): string | undefined => {
-      if (typeof v === "string") return v.trim();
-      if (Array.isArray(v) && typeof v[0] === "string") return v[0].trim();
-      return undefined;
-    };
-
-    const firstImage = (v: unknown): string | undefined => {
-      if (!Array.isArray(v) || v.length === 0) return undefined;
-      const first = v[0] as { url?: unknown };
-      if (typeof first.url === "string") return first.url;
-      return undefined;
-    };
-
     const items: NewsItemData[] = data.records
       ?.map((record) => ({
         id: record.id,
         slug: firstString(record.fields?.slug) || record.id,
         title: firstString(record.fields?.title) || "Untitled",
         excerpt: firstString(record.fields?.excerpt) || "",
-        image: firstImage(record.fields?.image) || "/news/placeholder.png",
+        image: getValidImageUrl(record.fields?.image) || "/news/placeholder.png",
         status: firstString(record.fields?.status) || "News",
         publishedAt: firstString(record.fields?.publishedAt) || new Date().toISOString(),
         order: typeof record.fields?.order === "number" ? record.fields.order : 0,

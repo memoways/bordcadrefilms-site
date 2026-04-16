@@ -9,8 +9,8 @@
  *   BCFNumbers   → home.ts
  *   News         → news.ts
  *   Founder      → about.ts
- *   Team         → about.ts
  *   FestivalPhotos → about.ts
+ * (Team is now live in Airtable — no mock needed)
  */
 
 import heroJson from "./mock/hero.json";
@@ -18,12 +18,12 @@ import homeAboutJson from "./mock/home-about.json";
 import bcfNumbersJson from "./mock/bcf-numbers.json";
 import newsJson from "./mock/news.json";
 import founderJson from "./mock/founder.json";
-import teamJson from "./mock/team.json";
 import festivalPhotosJson from "./mock/festival-photos.json";
 
 import type { HeroVideoData } from "./hero";
 import type { HomeAboutData, BCFNumbersData, NewsItemData } from "./home";
-import type { FounderBioData, TeamMemberData, FestivalPhotoData } from "./about";
+import type { FounderBioData, FestivalPhotoData } from "./about";
+import type { NewsItem } from "./news";
 
 // ─── Hero ────────────────────────────────────────────────────────────────────
 
@@ -68,6 +68,19 @@ export const MOCK_NEWS: NewsItemData[] = newsJson.map((item) => ({
   order: item.order,
 }));
 
+// NewsItem shape (used by news.ts — includes director, content, location)
+export const MOCK_NEWS_ITEMS: NewsItem[] = newsJson.map((item) => ({
+  slug: item.slug,
+  title: item.title,
+  director: item.director,
+  excerpt: item.excerpt,
+  content: item.content,
+  status: item.status as NewsItem["status"],
+  image: item.image,
+  location: item.location,
+  publishedAt: item.publishedAt,
+}));
+
 // ─── Founder ─────────────────────────────────────────────────────────────────
 
 export const MOCK_FOUNDER: FounderBioData = {
@@ -77,17 +90,6 @@ export const MOCK_FOUNDER: FounderBioData = {
   image: founderJson.image ?? undefined,
   source: "fallback",
 };
-
-// ─── Team ─────────────────────────────────────────────────────────────────────
-
-export const MOCK_TEAM: TeamMemberData[] = teamJson.map((member) => ({
-  id: member.id,
-  name: member.name,
-  role: member.role,
-  bio: member.bio ?? undefined,
-  image: member.image ?? undefined,
-  order: member.order,
-}));
 
 // ─── Festival Photos ─────────────────────────────────────────────────────────
 
