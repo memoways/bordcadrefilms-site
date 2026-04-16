@@ -54,7 +54,7 @@ jobs:
           AIRTABLE_VIEW_NAME: ${{ secrets.AIRTABLE_VIEW_NAME }}
 
   deploy-production:
-    name: Deploy → Production (Coolify)
+    name: Deploy → Production (Vercel)
     needs: quality
     runs-on: ubuntu-latest
     # Only deploy to prod from main, or manual dispatch targeting production
@@ -66,14 +66,13 @@ jobs:
       url: https://bordcadrefilms.com
 
     steps:
-      - name: Trigger Coolify deploy
+      - name: Trigger Vercel production deploy
         run: |
-          curl --fail --silent --show-error -X GET \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_WEBHOOK_TOKEN }}" \
-            "${{ secrets.COOLIFY_WEBHOOK_URL }}"
+          curl --fail --silent --show-error -X POST \
+            "${{ secrets.VERCEL_DEPLOY_HOOK_PRODUCTION }}"
 
   deploy-staging:
-    name: Deploy → Staging (Coolify)
+    name: Deploy → Staging (Vercel)
     needs: quality
     runs-on: ubuntu-latest
     # Only deploy to staging from develop, or manual dispatch targeting staging
@@ -85,8 +84,7 @@ jobs:
       url: https://staging.bordcadrefilms.com
 
     steps:
-      - name: Trigger Coolify staging deploy
+      - name: Trigger Vercel staging deploy
         run: |
-          curl --fail --silent --show-error -X GET \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_STAGING_WEBHOOK_TOKEN }}" \
-            "${{ secrets.COOLIFY_STAGING_WEBHOOK_URL }}"
+          curl --fail --silent --show-error -X POST \
+            "${{ secrets.VERCEL_DEPLOY_HOOK_STAGING }}"
