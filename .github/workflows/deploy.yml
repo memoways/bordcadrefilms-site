@@ -54,7 +54,7 @@ jobs:
           AIRTABLE_VIEW_NAME: ${{ secrets.AIRTABLE_VIEW_NAME }}
 
   deploy-production:
-    name: Deploy → Production (Vercel)
+    name: Deploy → Production (Netlify)
     needs: quality
     runs-on: ubuntu-latest
     # Only deploy to prod from main, or manual dispatch targeting production
@@ -66,13 +66,13 @@ jobs:
       url: https://bordcadrefilms.com
 
     steps:
-      - name: Trigger Vercel production deploy
+      - name: Trigger Netlify production deploy
         run: |
           curl --fail --silent --show-error -X POST \
-            "${{ secrets.VERCEL_DEPLOY_HOOK_PRODUCTION }}"
+            "${{ secrets.NETLIFY_DEPLOY_HOOK_PRODUCTION }}"
 
   deploy-staging:
-    name: Deploy → Staging (Vercel)
+    name: Deploy → Staging (Netlify)
     needs: quality
     runs-on: ubuntu-latest
     # Only deploy to staging from develop, or manual dispatch targeting staging
@@ -84,7 +84,7 @@ jobs:
       url: https://staging.bordcadrefilms.com
 
     steps:
-      - name: Trigger Vercel staging deploy
+      - name: Trigger Netlify staging deploy
         run: |
           curl --fail --silent --show-error -X POST \
-            "${{ secrets.VERCEL_DEPLOY_HOOK_STAGING }}"
+            "${{ secrets.NETLIFY_DEPLOY_HOOK_STAGING }}"
