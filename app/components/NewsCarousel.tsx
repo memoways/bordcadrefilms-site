@@ -10,19 +10,6 @@ type NewsCarouselProps = {
   autoPlayMs?: number;
 };
 
-function statusClass(status: NewsItem["status"]): string {
-  switch (status) {
-    case "Currently shooting":
-      return "bg-zinc-100 text-zinc-900";
-    case "In post-production":
-      return "bg-zinc-100 text-zinc-900";
-    case "Festival premiere":
-      return "bg-zinc-100 text-zinc-900";
-    default:
-      return "bg-zinc-100 text-zinc-900";
-  }
-}
-
 export default function NewsCarousel({ items, autoPlayMs = 6500 }: NewsCarouselProps) {
   const [active, setActive] = useState(0);
 
@@ -57,7 +44,7 @@ export default function NewsCarousel({ items, autoPlayMs = 6500 }: NewsCarouselP
             style={{ transform: `translateX(-${active * 100}%)` }}
             aria-live="polite"
           >
-            {items.map((item) => (
+            {items.map((item, index) => (
               <article key={item.slug} className="w-full shrink-0">
                 <div className="grid md:grid-cols-2 gap-8 md:gap-12 p-8 md:p-12 items-center">
                   <div className="space-y-5">
@@ -65,30 +52,51 @@ export default function NewsCarousel({ items, autoPlayMs = 6500 }: NewsCarouselP
                     <p className="text-lg font-light text-zinc-600">by {item.director}</p>
                     <p className="text-zinc-700 leading-relaxed">{item.excerpt}</p>
                     <div className="flex flex-wrap items-center gap-3 pt-2">
-                      <span className={`inline-flex rounded-md px-3 py-1 text-sm font-semibold ${statusClass(item.status)}`}>
+                      <span className="inline-flex rounded-md px-3 py-1 text-sm font-semibold bg-zinc-100 text-zinc-900">
                         {item.status}
                       </span>
                       <span className="text-sm text-zinc-500">{item.location}</span>
                     </div>
-                    <Link
-                      href={`/news/${item.slug}`}
-                      prefetch
-                      className="inline-flex mt-2 rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-900 hover:bg-zinc-100 transition"
-                    >
-                      Read the full update
-                    </Link>
+                    {item.link ? (
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex mt-2 rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-900 hover:bg-zinc-100 transition"
+                      >
+                        Read article ↗
+                      </a>
+                    ) : (
+                      <Link
+                        href={`/news/${item.slug}`}
+                        prefetch
+                        className="inline-flex mt-2 rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-900 hover:bg-zinc-100 transition"
+                      >
+                        Read the full update
+                      </Link>
+                    )}
                   </div>
 
                   <Link href={`/news/${item.slug}`} prefetch className="block focus:outline-none focus:ring-2 focus:ring-white rounded-2xl">
                     <div className="relative w-full h-72 md:h-90 rounded-2xl overflow-hidden bg-zinc-100">
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        priority={active === 0}
-                      />
+                      {item.image ? (
+                        <Image
+                          src={item.image}
+                          alt={item.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          priority={index === 0}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-zinc-100">
+                          <svg className="text-zinc-300" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                            <rect x="3" y="7" width="18" height="13" rx="2" />
+                            <circle cx="12" cy="13.5" r="3" />
+                            <path d="M8 7V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                   </Link>
                 </div>

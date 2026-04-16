@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import Header from "./components/Header";
 import NewsletterModule from "./components/NewsletterModule";
@@ -47,11 +48,17 @@ export default function RootLayout({
       lang="fr"
       className={`${suisseIntl.variable} h-full antialiased`}
     >
+      <head>
+        {/* Preconnect to Clerk CDN — loaded on every page for auth state */}
+        <link rel="preconnect" href="https://tidy-satyr-19.clerk.accounts.dev" crossOrigin="anonymous" />
+      </head>
       <body className="min-h-full flex flex-col bg-white text-black">
-        <Header />
-        <main className="flex-1 flex flex-col">{children}</main>
-        <NewsletterModule />
-        <Footer />
+        <ClerkProvider>
+          <Header />
+          <main className="flex-1 flex flex-col">{children}</main>
+          <NewsletterModule />
+          <Footer />
+        </ClerkProvider>
       </body>
     </html>
   );

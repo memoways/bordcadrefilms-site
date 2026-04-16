@@ -4,13 +4,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 
-const NAV_LINKS = [
-  { href: "/", label: "Accueil" },
+type NavLink = { href: string; label: string; prefetch?: true };
+
+const NAV_LINKS: NavLink[] = [
+  { href: "/", label: "Home" },
   { href: "/news", label: "News", prefetch: true },
   { href: "/completed-films", label: "Films", prefetch: true },
-  { href: "/directors", label: "Réalisateurs", prefetch: true },
+  { href: "/directors", label: "Directors", prefetch: true },
+  { href: "/about", label: "About", prefetch: true },
   { href: "/contact", label: "Contact" },
-] as const;
+];
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -22,7 +25,7 @@ export default function Header() {
       <nav className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-3 group" onClick={closeMobileMenu}>
           <Image
-            src="https://cdn.cmsfly.com/65f94adfe0dc7a0012ede758/images/logobcfB-0kS11.svg"
+            src="/logo-bcf.svg"
             alt="Logo Bord Cadre Films"
             width={120}
             height={50}

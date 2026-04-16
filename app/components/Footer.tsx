@@ -147,7 +147,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-white/40">
-          <span>© {new Date().getFullYear()} Bord Cadre Films. Tous droits réservés.</span>
+          <span>© {new Date().getFullYear()} Bord Cadre Films. All rights reserved.</span>
           <span>Genève, Suisse</span>
         </div>
       </div>

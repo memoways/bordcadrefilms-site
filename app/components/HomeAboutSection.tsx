@@ -14,7 +14,7 @@ export default async function HomeAboutSection() {
           prefetch
           className="mt-4 px-6 py-2 rounded brand-btn-primary font-normal transition shadow"
         >
-          {data.cta_text || "En savoir plus"}
+          {data.cta_text || "Learn more"}
         </Link>
       </div>
     </section>

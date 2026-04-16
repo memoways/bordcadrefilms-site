@@ -47,10 +47,10 @@ export default async function Home() {
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <div className="flex flex-col w-full min-h-screen bg-background text-foreground">
         <HomeHero hero={hero} />
+         <HomeAboutSection />
         <Suspense fallback={<NewsCarouselSkeleton />}>
           <HomeNewsSection />
         </Suspense>
-        <HomeAboutSection />
         <HomeFilmGridPreview films={films} />
         <Suspense fallback={<HomeDirectorsPreviewFallback />}>
           <HomeDirectorsPreview />
