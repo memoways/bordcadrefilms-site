@@ -105,14 +105,24 @@ export default function GalleryCarousel({ images, title }: { images: GalleryImag
                   pointerEvents: isBlurred ? "none" : "auto",
                 }}
               >
-                <Image
-                  src={img.url}
-                  alt={img.alt || `${title} — image ${imgIdx + 1}`}
-                  fill
-                  sizes={isBlurred ? "160px" : "300px"}
-                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                  draggable={false}
-                />
+                {img.url ? (
+                  <Image
+                    src={img.url}
+                    alt={img.alt || `${title} — image ${imgIdx + 1}`}
+                    fill
+                    sizes={isBlurred ? "160px" : "300px"}
+                    className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                    draggable={false}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-800">
+                    <svg className="text-zinc-600" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                      <rect x="3" y="7" width="18" height="13" rx="2" />
+                      <circle cx="12" cy="13.5" r="3" />
+                      <path d="M8 7V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                    </svg>
+                  </div>
+                )}
                 {/* Hover zoom hint */}
                 {!isBlurred && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/15">
@@ -216,14 +226,24 @@ export default function GalleryCarousel({ images, title }: { images: GalleryImag
             style={{ maxWidth: "90vw", maxHeight: "85vh", width: "90vw", height: "85vh" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
-              src={current.url}
-              alt={current.alt}
-              fill
-              sizes="90vw"
-              className="object-contain"
-              priority
-            />
+            {current.url ? (
+              <Image
+                src={current.url}
+                alt={current.alt}
+                fill
+                sizes="90vw"
+                className="object-contain"
+                priority
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                <svg className="text-zinc-600" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                  <rect x="3" y="7" width="18" height="13" rx="2" />
+                  <circle cx="12" cy="13.5" r="3" />
+                  <path d="M8 7V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                </svg>
+              </div>
+            )}
           </div>
         </div>
       )}
