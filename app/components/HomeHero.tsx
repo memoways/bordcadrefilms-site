@@ -9,7 +9,7 @@ export default function HomeHero({ hero }: HomeHeroProps) {
   const title = hero.title || "Bord Cadre Films";
   const subtitle =
     hero.subtitle ||
-    "Société de production cinématographique basée à Genève, spécialisée dans la production de films d’auteur, longs et courts métrages, avec une présence internationale dans les festivals et coproductions.";
+    "Independent film production company based in Geneva, specialising in arthouse features and short films, with an international presence at festivals and co-productions.";
 
   return (
     <section className="w-full min-h-screen flex flex-col items-center justify-center relative text-white overflow-hidden">
@@ -29,11 +29,11 @@ export default function HomeHero({ hero }: HomeHeroProps) {
         <h1 className="text-4xl md:text-6xl font-bold text-center mt-4 text-white drop-shadow-sm">{title}</h1>
         <p className="text-lg md:text-xl text-center max-w-2xl mt-2 text-zinc-200">{subtitle}</p>
         <div className="flex flex-col md:flex-row gap-4 mt-6">
-          <Link href="/completed-films" prefetch className="px-6 py-2 rounded-lg brand-btn-primary font-semibold transition-all duration-150 shadow-sm">
-            Voir les films
+          <Link href="/completed-films" prefetch className="px-6 py-2 rounded-lg brand-btn-primary font-normal transition-all duration-150 shadow-sm">
+            View films
           </Link>
-          <Link href="/directors" prefetch className="px-6 py-2 rounded-lg border border-zinc-400 text-white font-semibold hover:bg-zinc-200/10 transition-all duration-150 shadow-sm">
-            Réalisateurs
+          <Link href="/directors" prefetch className="px-6 py-2 rounded-lg border border-zinc-400 text-white font-normal hover:bg-zinc-200/10 transition-all duration-150 shadow-sm">
+            Directors
           </Link>
         </div>
       </div>

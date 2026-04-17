@@ -11,8 +11,8 @@ export default function ContactForm() {
   if (state.status === "success") {
     return (
       <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-center">
-        <p className="text-lg font-semibold text-zinc-900">Message envoyé !</p>
-        <p className="text-zinc-600 mt-1">Nous vous répondrons dans les meilleurs délais.</p>
+        <p className="text-lg font-semibold text-zinc-900">Message sent!</p>
+        <p className="text-zinc-600 mt-1">We&apos;ll get back to you as soon as possible.</p>
       </div>
     );
   }
@@ -20,7 +20,7 @@ export default function ContactForm() {
   return (
     <form action={action} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label htmlFor="name" className="text-sm font-medium text-zinc-700">Nom</label>
+        <label htmlFor="name" className="text-sm font-medium text-zinc-700">Name</label>
         <input
           id="name"
           name="name"
@@ -59,9 +59,9 @@ export default function ContactForm() {
       <button
         type="submit"
         disabled={pending}
-        className="bg-zinc-900 text-white px-6 py-2 rounded-lg font-semibold hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="bg-zinc-900 text-white px-6 py-2 rounded-lg font-normal hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {pending ? "Envoi en cours…" : "Envoyer"}
+        {pending ? "Envoi…" : "Envoyer"}
       </button>
     </form>
   );

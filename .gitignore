@@ -41,6 +41,12 @@ yarn-error.log*
 # coolify
 .coolify/
 
+# Font source files — only web-ready fonts belong in public/fonts/
+# Desktop font packages, font manager exports (.rightfontlibrary, etc.)
+public/fonts/desktop*/
+public/fonts/**/*.ttf
+public/fonts/**/*.rightfontlibrary
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
@@ -65,9 +71,17 @@ skills-lock.json
 
 # temp / dev artifacts
 status-showcase-next/
+perf-*.json
+proxy.ts
 
-# internal docs (not for version control)
-IMPLEMENTATION_LOG.md
-PERFORMANCE_OPTIMIZATION.md
-PROJECT_STATUS_*.md
-📋 PRD*
+# MCP / AI tooling config
+.mcp.json
+.serena/
+
+# Markdown — only README and GitHub templates go to the remote
+*.md
+!README.md
+!.github/**/*.md
+
+# clerk configuration (can include secrets)
+/.clerk/

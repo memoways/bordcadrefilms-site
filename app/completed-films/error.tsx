@@ -23,13 +23,13 @@ export default function FilmsError({
       <div className="flex gap-3">
         <button
           onClick={reset}
-          className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-700"
+          className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-normal text-white transition-colors hover:bg-zinc-700"
         >
           Réessayer
         </button>
         <Link
           href="/"
-          className="rounded-lg border border-zinc-300 px-5 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100"
+          className="rounded-lg border border-zinc-300 px-5 py-2 text-sm font-normal text-zinc-700 transition-colors hover:bg-zinc-100"
         >
           Retour à l&apos;accueil
         </Link>

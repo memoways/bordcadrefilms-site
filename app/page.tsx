@@ -7,6 +7,7 @@ import HomeDirectorsPreview from "./components/HomeDirectorsPreview";
 import NewsCarouselSkeleton from "./components/NewsCarouselSkeleton";
 import FilmGridSkeleton from "./components/FilmGridSkeleton";
 import DirectorGridSkeleton from "./components/DirectorGridSkeleton";
+import { getFilms } from "./lib/catalog";
 import { readHeroVideo } from "./lib/hero";
 
 export const revalidate = 900;
@@ -40,19 +41,17 @@ function HomeDirectorsPreviewFallback() {
 }
 
 export default async function Home() {
-  const hero = await readHeroVideo();
+  const [hero, films] = await Promise.all([readHeroVideo(), getFilms()]);
 
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <div className="flex flex-col w-full min-h-screen bg-background text-foreground">
         <HomeHero hero={hero} />
+         <HomeAboutSection />
         <Suspense fallback={<NewsCarouselSkeleton />}>
           <HomeNewsSection />
         </Suspense>
-        <HomeAboutSection />
-        <Suspense fallback={<HomeFilmPreviewFallback />}>
-          <HomeFilmGridPreview />
-        </Suspense>
+        <HomeFilmGridPreview films={films} />
         <Suspense fallback={<HomeDirectorsPreviewFallback />}>
           <HomeDirectorsPreview />
         </Suspense>

@@ -1,10 +1,10 @@
 import { cache } from 'react';
-import { slugify } from './utils';
+import { unstable_cache } from 'next/cache';
+import { slugify, firstString, getValidImageUrl } from './utils';
 
 const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME!;
 const VIEW_NAME = process.env.AIRTABLE_VIEW_NAME!;
 const BASE_ID = process.env.AIRTABLE_BASE_ID!;
-const FESTIVALS_TABLE_NAME = process.env.AIRTABLE_FESTIVALS_TABLE_NAME || 'festivals';
 
 export type Film = {
   slug: string;
@@ -31,10 +31,18 @@ export type Film = {
   directorFilmography?: string;
   duration?: string;
   nations?: string;
+  quoteEN?: string;
+  quoteFR?: string;
+  festivalLogoUrl?: string;
+  crewComplete?: string;
+  production?: string[];
+  coproduction?: string[];
+  premiereDate?: string;
+  mainUrl?: string;
 };
 
 type AirtableFieldMap = Record<string, unknown>;
-type AirtableRecord = { id?: string; fields: AirtableFieldMap };
+export type AirtableRecord = { id?: string; fields: AirtableFieldMap };
 
 function collectTextValues(value: unknown): string[] {
   if (typeof value === 'string') {
@@ -73,45 +81,10 @@ function joinTextValues(value: unknown): string | undefined {
   return text || undefined;
 }
 
-function isAirtableRecordId(value: string): boolean {
-  return /^rec[a-zA-Z0-9]+$/.test(value);
-}
-
-function getDisplayText(fields: AirtableFieldMap): string | undefined {
-  const preferredKeys = ['title', 'Title', 'name', 'Name', 'festival', 'Festival', 'label', 'Label', 'festival_name', 'Festival Name', 'festivalName'];
-
-  for (const key of preferredKeys) {
-    const text = joinTextValues(fields[key]);
-    if (text && !isAirtableRecordId(text)) return text;
-  }
-
-  for (const value of Object.values(fields)) {
-    const text = joinTextValues(value);
-    if (text && !isAirtableRecordId(text)) return text;
-  }
-
-  return undefined;
-}
-
-function resolveLinkedText(value: unknown, byId: Map<string, string>): string | undefined {
-  const tokens = collectTextValues(value);
-  if (tokens.length === 0) return undefined;
-
-  const resolved = tokens
-    .map((token) => {
-      const trimmed = token.trim();
-      if (!trimmed) return undefined;
-      const lookup = byId.get(trimmed);
-      if (lookup) return lookup;
-      if (isAirtableRecordId(trimmed)) return undefined;
-      return trimmed;
-    })
-    .filter((item): item is string => Boolean(item));
-
-  return resolved.length > 0 ? resolved.join('\n') : undefined;
-}
-
-async function fetchAirtableRecords(tableName: string, revalidateTag: string): Promise<AirtableRecord[]> {
+export async function fetchAirtableRecords(
+  tableName: string,
+  fields?: string[],
+): Promise<AirtableRecord[]> {
   const allRecords: AirtableRecord[] = [];
   let offset: string | undefined;
 
@@ -119,10 +92,16 @@ async function fetchAirtableRecords(tableName: string, revalidateTag: string): P
     const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(tableName)}`);
     url.searchParams.set('view', VIEW_NAME);
     if (offset) url.searchParams.set('offset', offset);
+    if (fields) {
+      for (const field of fields) url.searchParams.append('fields[]', field);
+    }
 
+    // cache: 'no-store' — unstable_cache owns the revalidation lifecycle at the
+    // processed Film[] level. Caching the raw 4 MB fetch response here would
+    // exceed Next.js's 2 MB fetch-cache limit and silently fail every time.
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}` },
-      next: { revalidate: 900, tags: [revalidateTag] },
+      cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -141,12 +120,31 @@ async function fetchAirtableRecords(tableName: string, revalidateTag: string): P
   return allRecords;
 }
 
-export const readAirtableFilms = cache(async function (): Promise<Film[]> {
-  try {
-    const records = await fetchAirtableRecords(TABLE_NAME, 'films');
+// unstable_cache stores the *processed* Film[] array (~200 KB) in Next.js's
+// data cache on the filesystem. This bypasses the 2 MB fetch-cache limit that
+// applies to raw HTTP responses. Revalidates every 15 min, or on-demand via
+// the 'films' tag (hit /api/revalidate?tag=films).
+const _readAirtableFilms = unstable_cache(
+  async function (): Promise<Film[]> {
+    try {
+      const records = await fetchAirtableRecords(TABLE_NAME);
+      return _processFilmRecords(records);
+    } catch (err) {
+      console.error('[Airtable] Fetch error, returning empty film list:', err);
+      return [];
+    }
+  },
+  ['airtable-films'],
+  { revalidate: 900, tags: ['films'] },
+);
 
-    const seen = new Set<string>();
-    const films: Film[] = records.map((record: AirtableRecord, i: number) => {
+// React cache deduplicates within a single render pass — e.g. generateMetadata
+// + the page body both call getFilms(), but unstable_cache is only hit once.
+export const readAirtableFilms = cache(_readAirtableFilms);
+
+function _processFilmRecords(records: AirtableRecord[]): Film[] {
+  const seen = new Set<string>();
+  const films: Film[] = records.map((record: AirtableRecord, i: number) => {
       const f = record.fields;
 
       let slug = '';
@@ -156,18 +154,6 @@ export const readAirtableFilms = cache(async function (): Promise<Film[]> {
       else slug = `film-${i}`;
       if (seen.has(slug)) slug = `${slug}-${i}`;
       seen.add(slug);
-
-      const firstString = (val: unknown): string | undefined => {
-        if (typeof val === 'string') return val;
-        if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'string') return val[0];
-        return undefined;
-      };
-
-      const firstImageUrl = (val: unknown): string | undefined => {
-        if (!Array.isArray(val) || val.length === 0 || typeof val[0] !== 'object' || val[0] === null) return undefined;
-        const first = val[0] as { url?: unknown };
-        return typeof first.url === 'string' ? first.url : undefined;
-      };
 
       const allImageUrls = (val: unknown): string[] => {
         if (!Array.isArray(val)) return [];
@@ -207,15 +193,15 @@ export const readAirtableFilms = cache(async function (): Promise<Film[]> {
           firstString(f['Movie Synopsis']) ||
           undefined,
         bio: firstString(f['bio']) || firstString(f['Director Bio FR']) || firstString(f['Director Bio EN']) || undefined,
-        poster: firstImageUrl(f['Poster Lookup']) || firstImageUrl(f['Pictures (published) - Movie']) || firstImageUrl(f['Pictures (published) - MISC']) || firstImageUrl(f['Pictures']) || undefined,
-        profilePicture: firstImageUrl(f['Director profile picture']) || undefined,
+        poster: getValidImageUrl(f['Poster Lookup']) || getValidImageUrl(f['Pictures (published) - Movie']) || getValidImageUrl(f['Pictures (published) - MISC']) || getValidImageUrl(f['Pictures']) || undefined,
+        profilePicture: getValidImageUrl(f['Director profile picture']) || undefined,
         year: (typeof f['Release Year'] === 'number' ? f['Release Year'].toString() : firstString(f['Release Year'])) || undefined,
         genres: firstString(f['Genre']) || undefined,
         country: firstString(f['NationsFullNameFR (from Countries (Linked Record))']) || firstString(f['Countries (Linked Record)']) || undefined,
         status: firstString(f['Status Table']) || undefined,
         publish: firstString(f['Publish']) || undefined,
         category: firstString(f['Category']) || undefined,
-        awards: joinTextValues(f['Festival and Awards']) || undefined,
+        awards: joinTextValues(f['Festival and Awards Name EN']) || joinTextValues(f['Festival and Awards Name FR']) || undefined,
         imdb: stringOrValue(f['IMDB page']) || undefined,
         team: firstString(f['Team (People Table)']) || undefined,
         images: allImageUrls(f['Pictures (published) - Movie']) || [],
@@ -239,12 +225,16 @@ export const readAirtableFilms = cache(async function (): Promise<Film[]> {
           undefined,
         duration: (typeof f['Film Duration hmm'] === 'number' ? f['Film Duration hmm'].toString() : firstString(f['Film Duration hmm'])) || undefined,
         nations: firstString(f['NationsFullNameFR (from Countries (Linked Record))']) || undefined,
+        quoteEN: firstString(f['Quote EN']) || undefined,
+        quoteFR: firstString(f['Quote FR']) || undefined,
+        festivalLogoUrl: getValidImageUrl(f['Festival Organization Logo']) || undefined,
+        crewComplete: firstString(f['CrewComplete (from Crew)']) || undefined,
+        production: Array.isArray(f['Production']) ? (f['Production'] as unknown[]).map(v => typeof v === 'string' ? v.trim() : '').filter(Boolean) : undefined,
+        coproduction: Array.isArray(f['Co-production']) ? (f['Co-production'] as unknown[]).map(v => typeof v === 'string' ? v.trim() : '').filter(Boolean) : undefined,
+        premiereDate: firstString(f['Premier date']) || firstString(f['World Premiere']) || undefined,
+        mainUrl: firstString(f['Main url']) || undefined,
       };
     });
 
-    return films;
-  } catch (err) {
-    console.error('[Airtable] Fetch error, returning empty film list:', err);
-    return [];
-  }
-});
+  return films;
+}

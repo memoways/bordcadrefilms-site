@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // Keep prefetched route payloads warm longer for instant back-and-forth navigation.
     staleTimes: {
-      dynamic: 300,
+      dynamic: 900,
       static: 900,
     },
   },

@@ -25,9 +25,9 @@ export default function FilmFilters({ years, genres, countries, values, onChange
   return (
     <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
       <label className="block">
-        <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">Annee</span>
+        <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">Year</span>
         <select value={values.year} onChange={(e) => set("year", e.target.value)} className={selectClass}>
-          <option value="">Toutes</option>
+          <option value="">All</option>
           {years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
       </label>
@@ -35,15 +35,15 @@ export default function FilmFilters({ years, genres, countries, values, onChange
       <label className="block">
         <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">Genre</span>
         <select value={values.genre} onChange={(e) => set("genre", e.target.value)} className={selectClass}>
-          <option value="">Tous</option>
+          <option value="">All</option>
           {genres.map((g) => <option key={g} value={g}>{g}</option>)}
         </select>
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">Pays</span>
+        <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">Country</span>
         <select value={values.country} onChange={(e) => set("country", e.target.value)} className={selectClass}>
-          <option value="">Tous</option>
+          <option value="">All</option>
           {countries.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </label>
@@ -53,7 +53,7 @@ export default function FilmFilters({ years, genres, countries, values, onChange
         onClick={() => onChange({ year: "", genre: "", country: "" })}
         className="h-11 rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
       >
-        Reinitialiser
+        Reset
       </button>
     </form>
   );

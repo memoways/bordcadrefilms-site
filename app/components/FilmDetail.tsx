@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getValidImageUrl } from "../lib/utils";
-import { type Film } from "../lib/airtable";
+import { getValidImageUrl, safeExternalUrl } from "../lib/utils";
+import { type Film } from "@/app/lib/airtable";
+import GalleryCarousel from "./GalleryCarousel";
 
 function splitList(value?: string): string[] {
   if (!value) return [];
@@ -19,22 +20,33 @@ function splitAwards(value?: string): string[] {
     .filter(Boolean);
 }
 
-function formatDuration(value?: string): string {
-  if (!value) return "";
-  const num = Number(value);
-  if (Number.isNaN(num)) return value;
-  const hours = Math.floor(num / 60);
-  const minutes = num % 60;
-  if (hours <= 0) return `${num} min`;
-  return `${hours}:${String(minutes).padStart(2, "0")}`;
+function parseDurationMinutes(value?: string): number | null {
+  if (!value) return null;
+
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) return null;
+
+  return Math.round(minutes);
+}
+
+function formatDurationLabel(value?: string): string {
+  const totalMinutes = parseDurationMinutes(value);
+  if (!totalMinutes) return "";
+
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+
+  if (hours === 0) return `${totalMinutes} min`;
+  if (remainingMinutes === 0) return `${hours}h`;
+
+  return `${hours}h ${String(remainingMinutes).padStart(2, "0")}`;
 }
 
 type FilmographyEntry = { year?: number; title: string };
 
 function parseFilmographyEntries(value?: string): FilmographyEntry[] {
   if (!value) return [];
-
-  const entries = value
+  return value
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
@@ -45,11 +57,39 @@ function parseFilmographyEntries(value?: string): FilmographyEntry[] {
       const title = yearMatch
         ? cleanLine.replace(yearMatch[0], "").replace(/^[-–—:\s]+/, "").trim() || cleanLine
         : cleanLine;
-
       return { year, title };
-    });
+    })
+    .sort((a, b) => (b.year ?? -1) - (a.year ?? -1));
+}
 
-  return entries.sort((a, b) => (b.year ?? -1) - (a.year ?? -1));
+// Parse CrewComplete string: "Role: value | Role: value | ..."
+function parseCrew(raw?: string): Record<string, string> {
+  if (!raw) return {};
+  const result: Record<string, string> = {};
+  raw.split("|").forEach((segment) => {
+    const colon = segment.indexOf(":");
+    if (colon < 0) return;
+    const key = segment.slice(0, colon).trim();
+    const val = segment.slice(colon + 1).trim().replace(/,\s*$/, "").trim();
+    if (key && val) result[key] = val;
+  });
+  return result;
+}
+
+// Extract quote text and optional author (format: "quote text" — Author, Source)
+function parseQuote(raw?: string): { text: string; author?: string } | null {
+  if (!raw) return null;
+  const text = raw.trim();
+  if (!text) return null;
+  // Try to split author after em-dash or last "—"
+  const dashIdx = text.lastIndexOf("—");
+  if (dashIdx > 0) {
+    return {
+      text: text.slice(0, dashIdx).trim().replace(/^["«]|["»]$/g, ""),
+      author: text.slice(dashIdx + 1).trim(),
+    };
+  }
+  return { text: text.replace(/^["«]|["»]$/g, "") };
 }
 
 export default function FilmDetail({ film }: { film: Film }) {
@@ -58,214 +98,325 @@ export default function FilmDetail({ film }: { film: Film }) {
   const filmYear = film.year || "";
   const filmCountry = film.country || "";
   const filmAwards = film.awards || "";
-  const filmImdb = film.imdb || "";
-  const filmDuration = formatDuration(film.duration);
+  const filmImdb = safeExternalUrl(film.imdb) ?? "";
+  const filmDuration = formatDurationLabel(film.duration);
   const posterUrl = getValidImageUrl(film.poster);
   const directorImageUrl = getValidImageUrl(film.profilePicture);
   const tagline = film.tagline || "";
+  const synopsis = film.synopsis || "";
   const directorWordsEnglish = film.directorWordsEnglish || "";
-  const directorBio = film.bio || "";
   const filmography = film.directorFilmography || "";
-  const team = film.team || "";
+  const crew = parseCrew(film.crewComplete);
+  const production = film.production || [];
+  const coproduction = film.coproduction || [];
+  const premiereDate = film.premiereDate || "";
+  const mainUrl = safeExternalUrl(film.mainUrl) ?? "";
   const genres = splitList(film.genres);
   const awardsList = splitAwards(filmAwards);
-  const recentFilmography = parseFilmographyEntries(filmography).slice(0, 3);
+  const recentFilmography = parseFilmographyEntries(filmography)
+    .filter((e) => e.title.toLowerCase() !== title.toLowerCase())
+    .slice(0, 3);
   const hasAwards = awardsList.length > 0;
-  const hasDirectorWordsSection = Boolean(directorWordsEnglish || directorName || directorImageUrl || directorBio || team || recentFilmography.length);
-  const directorFilmsHref = directorName ? `/completed-films?director=${encodeURIComponent(directorName)}` : "/completed-films";
-  const heroGridClass = posterUrl
+  const festivalLogoUrl = getValidImageUrl(film.festivalLogoUrl);
+  const quote = parseQuote(film.quoteEN || film.quoteFR);
+  const heroQuoteText = quote?.text || tagline;
+  const heroQuoteAuthor = quote?.author;
+  const directorFilmsHref = directorName
+    ? `/completed-films?director=${encodeURIComponent(directorName)}`
+    : "/completed-films";
+
+  const heroLayoutClass = posterUrl
     ? hasAwards
-      ? "lg:grid-cols-[320px_minmax(0,1fr)_360px]"
-      : "lg:grid-cols-[320px_minmax(0,1fr)]"
+      ? "lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)_minmax(220px,300px)] xl:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_minmax(240px,320px)]"
+      : "lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] xl:grid-cols-[minmax(260px,300px)_minmax(0,1fr)]"
     : hasAwards
-      ? "lg:grid-cols-[minmax(0,1fr)_360px]"
+      ? "lg:grid-cols-[minmax(0,1fr)_minmax(220px,300px)] xl:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]"
       : "lg:grid-cols-[minmax(0,1fr)]";
 
   const galleryImages = (Array.isArray(film.images) ? film.images : [])
-    .map((img, idx) => {
+    .map((img: string, idx: number) => {
       const url = getValidImageUrl(img);
       if (!url) return null;
       return { url, alt: `${title} - image ${idx + 1}` };
     })
     .filter(Boolean) as { url: string; alt: string }[];
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[FilmDetail] raw film data", JSON.stringify(film, null, 2));
-    console.log(
-      "[FilmDetail] derived film data",
-      JSON.stringify(
-        {
-          title,
-          directorName,
-          filmYear,
-          filmCountry,
-          filmAwards,
-          filmImdb,
-          filmDuration,
-          tagline,
-          directorWordsEnglish,
-          directorBio,
-          team,
-          genres,
-          filmography,
-          recentFilmography,
-          posterUrl,
-          directorImageUrl,
-          galleryImages,
-        },
-        null,
-        2
-      )
-    );
-  }
+  // Inline metadata line: Country  |  Year  |  Durée X:XX
+  const metaParts: string[] = [
+    filmCountry,
+    filmYear,
+    filmDuration ? `${filmDuration}` : "",
+  ].filter(Boolean);
 
   return (
-    <div className="w-full min-h-screen bg-zinc-50 pb-16">
-      <section className="w-full overflow-visible border-b border-white/10 bg-[#1C1C1C] text-white" style={{ height: 457 }}>
-        <div
-          className={`mx-auto grid h-full w-full grid-cols-1 gap-10 px-4 pl-75 pt-15 lg:items-start ${heroGridClass}`}
-          style={{ maxWidth: 1950 }}
-        >
-          {posterUrl && (
-            <div className="translate-y-15 overflow-hidden rounded-2xl border border-white/10 bg-zinc-100 shadow-[0_28px_72px_-36px_rgba(0,0,0,0.72)]">
-              <Image
-                src={posterUrl}
-                alt={`Affiche du film ${title}`}
-                width={320}
-                height={480}
-                className="h-full w-full object-cover"
-                priority
-              />
-            </div>
-          )}
+    <div className="w-full min-h-screen overflow-x-hidden bg-zinc-50 pb-20">
 
-          <div className="flex min-w-0 flex-col gap-5">
-            <div className="space-y-3">
-              <p className="text-sm font-medium tracking-[0.24em] text-white/70 uppercase">Fiche film</p>
-              <h1 className="max-w-4xl text-4xl font-semibold leading-[1.05] text-white md:text-5xl lg:text-6xl">{title}</h1>
-              {directorName && (
-                <p className="text-lg text-white/80">
-                  Réalisé par <span className="underline decoration-white/30 decoration-1 underline-offset-4">{directorName}</span>
-                </p>
-              )}
-              {(filmCountry || filmYear || filmDuration) && (
-                <p className="text-sm tracking-wide text-white/70">
-                  {[filmCountry, filmYear, filmDuration].filter(Boolean).join("  |  ")}
-                </p>
-              )}
-            </div>
-
-            {genres.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {genres.map((genre) => (
-                  <span
-                    key={genre}
-                    className="rounded-md border border-[#E0A75D]/45 bg-[#E0A75D]/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-[#F6DCA0]"
-                  >
-                    {genre}
-                  </span>
-                ))}
+      {/* Responsive hero */}
+      <section className="w-full overflow-visible bg-[#1C1C1C] text-white">
+        <div className="mx-auto max-w-400 px-4 pb-12 pt-7 sm:px-6 sm:pb-14 sm:pt-9 md:px-8 lg:px-10 lg:pb-10 lg:pt-12">
+          <div className={`grid gap-8 lg:items-start lg:gap-6 xl:gap-8 ${heroLayoutClass}`}>
+            {posterUrl && (
+              <div className="relative z-20 mx-auto w-full max-w-70 sm:max-w-80 md:max-w-90 lg:mx-0 lg:max-w-72.5 lg:translate-y-20 xl:max-w-[320px] xl:translate-y-24 2xl:translate-y-28">
+                <div className="overflow-hidden rounded-[10px] border-2 border-[#F4F4F4] shadow-[10px_10px_10px_#8E8E8E33]">
+                  <Image
+                    src={posterUrl}
+                    alt={`Film poster — ${title}`}
+                    width={900}
+                    height={1332}
+                    className="h-auto w-full object-cover"
+                    sizes="(max-width: 639px) 78vw, (max-width: 767px) 68vw, (max-width: 1023px) 44vw, (max-width: 1279px) 30vw, 26vw"
+                    priority
+                  />
+                </div>
               </div>
             )}
 
-            {tagline && (
-              <div className="max-w-4xl border-l-2 border-[#E0A75D] pl-5 pt-2">
-                <p className="text-[1.08rem] leading-[1.55] text-white/92 md:text-[1.12rem]">{tagline}</p>
+            <div className="flex min-w-0 w-full max-w-none justify-self-stretch flex-col gap-5 self-start sm:gap-6 lg:px-0 xl:px-2 2xl:px-4">
+              <div className="space-y-3 sm:space-y-4">
+                <p className="text-xs font-medium tracking-[0.24em] text-white/50 uppercase">Film</p>
+                <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl md:text-5xl lg:leading-[1.05]">{title}</h1>
+                {directorName && (
+                  <p className="text-base text-white/80 md:text-lg">
+                    Directed by <span className="underline decoration-white/30 decoration-1 underline-offset-4">{directorName}</span>
+                  </p>
+                )}
+                {metaParts.length > 0 && <p className="text-sm tracking-wide text-white/60">{metaParts.join("  |  ")}</p>}
               </div>
-            )}
 
-            {filmImdb && (
-              <div>
-                <a
-                  href={filmImdb}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex rounded-full border border-white/20 bg-white/8 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/12"
-                >
-                  Voir sur IMDb
-                </a>
-              </div>
+              {genres.length > 0 && (
+                <div className="flex flex-wrap gap-2.5">
+                  {genres.map((genre) => (
+                    <span
+                      key={genre}
+                      className="rounded-md border border-[#E0A75D]/45 bg-[#E0A75D]/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-[#F6DCA0]"
+                    >
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {heroQuoteText && (
+                <div className="max-w-2xl border-l-2 border-[#E0A75D] pl-4 sm:pl-5">
+                  <p className="text-sm italic leading-relaxed text-white/90 sm:text-base lg:line-clamp-7">
+                    {heroQuoteText}
+                  </p>
+                  {heroQuoteAuthor && <p className="mt-2 text-sm font-semibold text-[#E0A75D]">{heroQuoteAuthor}</p>}
+                </div>
+              )}
+            </div>
+
+            {hasAwards && (
+              <aside className="mx-auto w-full max-w-75 self-center justify-self-center rounded-3xl border border-[#E0A75D]/70 bg-[#171717] p-5 shadow-[0_28px_70px_-42px_rgba(0,0,0,0.8)] sm:p-6 lg:p-7">
+                <p className="mb-5 text-center text-xs font-medium uppercase tracking-[0.2em] text-[#F6DCA0] sm:tracking-[0.24em]">
+                  Festivals &amp; Awards
+                </p>
+                {festivalLogoUrl && (
+                  <div className="mb-5 flex justify-center">
+                    <Image
+                      src={festivalLogoUrl}
+                      alt="Festival logo"
+                      width={80}
+                      height={80}
+                      className="object-contain"
+                      style={{ filter: "brightness(0) invert(1)" }}
+                    />
+                  </div>
+                )}
+                <div className="space-y-4 text-center text-sm leading-6 text-white/82 sm:space-y-5">
+                  {awardsList.map((award, i) => (
+                    <div key={`${award}-${i}`} className="space-y-3">
+                      <p>{award}</p>
+                      {i < awardsList.length - 1 && <div className="mx-auto h-px w-20 bg-white/15 sm:w-24" />}
+                    </div>
+                  ))}
+                </div>
+              </aside>
             )}
           </div>
-
-          {hasAwards && (
-            <aside className="rounded-[1.75rem] border border-[#E0A75D]/70 bg-[#171717] p-6 shadow-[0_28px_70px_-42px_rgba(0,0,0,0.8)]">
-              <div className="mb-5 text-center">
-                <p className="text-sm font-medium uppercase tracking-[0.24em] text-[#F6DCA0]">Festivals &amp; Récompenses</p>
-              </div>
-
-              <div className="space-y-4 text-center text-sm leading-6 text-white/82">
-                {awardsList.map((award, index) => (
-                  <div key={`${award}-${index}`} className="space-y-3">
-                    <p>{award}</p>
-                    {index < awardsList.length - 1 && <div className="mx-auto h-px w-24 bg-white/15" />}
-                  </div>
-                ))}
-              </div>
-            </aside>
-          )}
         </div>
       </section>
 
-      {galleryImages.length > 0 && (
-        <section className="mx-auto mt-10 max-w-6xl px-4 pl-75">
-          <h3 className="mb-4 text-2xl font-bold text-zinc-900">Galerie</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {galleryImages.map((img) => (
-              <div key={img.url} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
-                <Image src={img.url} alt={img.alt} width={640} height={400} className="h-56 w-full object-cover" />
-              </div>
-            ))}
+      {/* ── Synopsis — white section ── */}
+      {synopsis && (
+        <section className="mx-auto mt-10 w-full max-w-400 px-4 sm:px-6 md:px-8 lg:mt-12 lg:px-10">
+          <div className="grid gap-7 lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] xl:grid-cols-[minmax(260px,300px)_minmax(0,1fr)]">
+            {posterUrl && <div className="hidden lg:block" aria-hidden="true" />}
+
+            <div className={`${posterUrl ? "lg:col-start-2" : ""} w-full max-w-4xl space-y-4`}>
+              <h3 className="mb-3 border-b border-zinc-200 pb-2 text-xl font-bold text-zinc-900">Synopsis</h3>
+              <p className="leading-relaxed text-zinc-700">{synopsis}</p>
+              {filmImdb && (
+                <p className="text-sm text-zinc-500">
+                  Official website{" "}
+                  <a href={filmImdb} target="_blank" rel="noreferrer" className="text-[#E0A75D] underline underline-offset-2">
+                    {filmImdb}
+                  </a>
+                </p>
+              )}
+            </div>
           </div>
         </section>
       )}
 
-      {hasDirectorWordsSection && (
-        <section className="mt-10 bg-[#DEDEDE] py-12">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="space-y-8">
-              <div className="flex flex-col items-start gap-5 lg:flex-row lg:items-start lg:gap-8">
-                {directorImageUrl && (
-                  <div className="h-28 w-28 shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-white">
-                    <Image src={directorImageUrl} alt={directorName || "Director"} width={112} height={112} className="h-full w-full object-cover" />
+      {/* ── Equipe / Production / Informations techniques ── */}
+      {(crew['Stars'] || crew['Cinematography'] || crew['Editor'] || crew['Music'] || crew['Sound Design'] || crew['Producers'] || production.length > 0 || filmCountry || premiereDate || filmDuration) && (
+        <section className="mx-auto mt-8 w-full max-w-4xl px-4 sm:px-6 md:px-8 lg:px-16">
+          <div className="space-y-8 rounded-2xl bg-[#F4F4F4] p-5 sm:p-6 md:space-y-9 md:p-8">
+
+            {/* Equipe */}
+            {(crew['Stars'] || crew['Cinematography'] || crew['Editor'] || crew['Music'] || crew['Sound Design'] || crew['Sound'] || crew['Producers']) && (
+              <div>
+                <h3 className="mb-4 flex items-center gap-3 text-lg font-bold text-zinc-900">
+                  <span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
+                  Cast &amp; Crew
+                </h3>
+                <dl className="space-y-1.5 text-sm text-zinc-700">
+                  {crew['Stars'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Cast:</dt><dd>{crew['Stars']}</dd></div>}
+                  {crew['Cinematography'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Cinematography:</dt><dd>{crew['Cinematography']}</dd></div>}
+                  {(crew['Sound Design'] || crew['Sound']) && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Sound:</dt><dd>{crew['Sound Design'] || crew['Sound']}</dd></div>}
+                  {crew['Editor'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Editor:</dt><dd>{crew['Editor']}</dd></div>}
+                  {crew['Music'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Music:</dt><dd>{crew['Music']}</dd></div>}
+                  {crew['Producers'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Producers:</dt><dd>{crew['Producers']}</dd></div>}
+                </dl>
+              </div>
+            )}
+
+            {/* Production & distribution */}
+            {(production.length > 0 || coproduction.length > 0 || crew['World sales']) && (
+              <div>
+                <h3 className="mb-4 flex items-center gap-3 text-lg font-bold text-zinc-900">
+                  <span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
+                  Production &amp; Distribution
+                </h3>
+                <dl className="space-y-1.5 text-sm text-zinc-700">
+                  {production.length > 0 && (
+                    <div className="flex gap-1">
+                      <dt className="font-semibold text-zinc-900 shrink-0">Production:</dt>
+                      <dd>{production.join(", ")}</dd>
+                    </div>
+                  )}
+                  {coproduction.length > 0 && (
+                    <div className="flex gap-1">
+                      <dt className="font-semibold text-zinc-900 shrink-0">Co-production:</dt>
+                      <dd>{coproduction.join(", ")}</dd>
+                    </div>
+                  )}
+                  {crew['World sales'] && (
+                    <div className="flex gap-1">
+                      <dt className="font-semibold text-zinc-900 shrink-0">World sales:</dt>
+                      <dd>{crew['World sales']}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            )}
+
+            {/* Informations techniques */}
+            {(filmCountry || premiereDate || filmDuration || filmImdb || mainUrl) && (
+              <div>
+                <h3 className="mb-4 flex items-center gap-3 text-lg font-bold text-zinc-900">
+                  <span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
+                  Technical details
+                </h3>
+                <dl className="space-y-1.5 text-sm text-zinc-700">
+                  {filmCountry && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Country:</dt><dd>{filmCountry}</dd></div>}
+                  {premiereDate && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Premiere:</dt><dd>{premiereDate}</dd></div>}
+                  {filmDuration && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Duration:</dt><dd>{filmDuration}</dd></div>}
+                </dl>
+                {(mainUrl || filmImdb) && (
+                  <div className="mt-4 flex items-center gap-3">
+                    {mainUrl && (
+                      <a href={mainUrl} target="_blank" rel="noreferrer" className="text-sm text-zinc-500 underline underline-offset-2 hover:text-zinc-800">
+                        More information
+                      </a>
+                    )}
+                    {filmImdb && (
+                      <a
+                        href={filmImdb}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded px-2 py-0.5 text-xs font-bold text-black"
+                        style={{ backgroundColor: "#F5C518" }}
+                      >
+                        IMDb
+                      </a>
+                    )}
                   </div>
                 )}
+              </div>
+            )}
 
-                <div className="min-w-0 space-y-3">
-                  {directorName && <h3 className="text-xl font-semibold text-zinc-900">{directorName}</h3>}
+          </div>
+        </section>
+      )}
 
-                  {directorWordsEnglish && (
-                    <div className="max-w-4xl">
-                      <h4 className="mb-2 text-2xl font-bold text-zinc-900">Director&apos;s words</h4>
-                      <p className="whitespace-pre-line text-zinc-700 leading-relaxed">{directorWordsEnglish}</p>
+      {/* ── Gallery ── */}
+      {galleryImages.length > 0 && (
+        <section className="mt-10 bg-[#1C1C1C] px-4 py-10 sm:px-6 md:px-8 lg:mt-12 lg:px-16 lg:py-12">
+          <h3 className="mb-4 border-b border-white/20 pb-2 text-xl font-bold text-white">Gallery</h3>
+          <GalleryCarousel images={galleryImages} title={title} />
+        </section>
+      )}
+
+      {/* ── Director section ── */}
+      {(directorImageUrl || directorName || recentFilmography.length > 0 || directorWordsEnglish) && (
+        <section className="mt-10 bg-[#DEDEDE] py-10 sm:py-12">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 md:px-8 lg:px-16">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
+
+              {/* Left col — avatar + name + filmography card */}
+              <div className="flex w-full max-w-70 shrink-0 flex-col items-center gap-4">
+                {directorImageUrl && (
+                  <div className="h-36 w-36 overflow-hidden rounded-full border-2 border-white/60 bg-zinc-300 shadow-md">
+                    <Image
+                      src={directorImageUrl}
+                      alt={directorName || "Director"}
+                      width={144}
+                      height={144}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                )}
+                {directorName && (
+                  <h3 className="text-center text-lg font-semibold text-zinc-900">{directorName}</h3>
+                )}
+                {recentFilmography.length > 0 && (
+                  <div className="h-50 w-full overflow-hidden rounded-[10px] bg-[#FFFFFFCC] px-5 py-4">
+                    <div className="mb-3 flex items-center gap-3">
+                      <span className="text-sm font-bold text-zinc-900">Filmography</span>
+                      <span className="h-px flex-1 bg-[#C0392B]" />
                     </div>
-                  )}
-
-                  {team && (
-                    <div className="text-sm text-zinc-700">
-                      <span className="font-semibold text-zinc-900">Equipe:</span> {team}
-                    </div>
-                  )}
-                </div>
+                    <ul className="space-y-1.5 text-sm text-zinc-800">
+                      {recentFilmography.map((entry, idx) => (
+                        <li key={`${entry.title}-${idx}`} className="flex gap-2 leading-snug">
+                          <span className="shrink-0 text-zinc-400">-</span>
+                          {entry.year && <span className="shrink-0 text-zinc-500">{entry.year}</span>}
+                          <span className="truncate">{entry.title}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      href={directorFilmsHref}
+                      className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-zinc-900 hover:underline"
+                    >
+                      All films <span aria-hidden>→</span>
+                    </Link>
+                  </div>
+                )}
               </div>
 
-
-              {recentFilmography.length > 0 && (
-                <div>
-                  <p className="mb-3 text-sm font-semibold text-zinc-900">Filmographie</p>
-                  <ul className="space-y-2 text-sm text-zinc-700">
-                    {recentFilmography.map((entry, idx) => (
-                      <li key={`${entry.title}-${idx}`} className="leading-relaxed">
-                        {entry.year ? `${entry.year}  ` : ""}
-                        {entry.title}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href={directorFilmsHref} className="mt-3 inline-block text-sm font-semibold text-zinc-900 underline underline-offset-4">
-                    Tous les films
-                  </Link>
+              {/* Right col — director's words */}
+              {directorWordsEnglish && (
+                <div className="min-w-0 flex-1">
+                  <h4 className="mb-4 text-xl font-bold text-zinc-900">Director&apos;s statement</h4>
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-700">{directorWordsEnglish}</p>
+                  {directorName && (
+                    <p className="mt-5 text-sm font-bold text-zinc-900">{directorName}</p>
+                  )}
                 </div>
               )}
+
             </div>
           </div>
         </section>

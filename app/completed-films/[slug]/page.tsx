@@ -24,6 +24,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  // getFilms() is wrapped in React cache() — same request as the page body
+  // shares the result, so this does NOT trigger a second Airtable fetch.
   const films = await getFilms();
   const film = films.find((f) => normalizeSlug(f.slug) === normalizeSlug(slug));
   return {
@@ -32,18 +34,22 @@ export async function generateMetadata({
   };
 }
 
-async function FilmContent({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+async function FilmContent({ slug }: { slug: string }) {
   const films = await getFilms();
   const film = films.find((f) => normalizeSlug(f.slug) === normalizeSlug(slug));
   if (!film) return notFound();
   return <FilmDetail film={film} />;
 }
 
-export default function Page({ params }: { params: Promise<{ slug: string }> }) {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
   return (
     <Suspense fallback={<FilmDetailSkeleton />}>
-      <FilmContent params={params} />
+      <FilmContent slug={slug} />
     </Suspense>
   );
 }

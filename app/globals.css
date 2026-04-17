@@ -4,18 +4,25 @@
 :root {
   --background: #ffffff;
   --foreground: #111111;
-  --color-12: #E0A75D;
-  --color-17: #1C1C1C;
-  --brand-primary: #111111;
-  --brand-secondary: #2a2a2a;
-  --brand-tertiary: #f4f4f5;
-  --brand-muted: #fafafa;
-  --brand-dark: #111111;
+  /* Brand palette — use these everywhere, never raw hex in components */
+  --color-accent: #E0A75D;      /* gold — primary CTAs */
+  --color-accent-hover: #c38f45; /* gold hover state */
+  --color-accent-text: #1C1C1C;  /* text on gold buttons */
+  --color-footer: #2B2B2B;       /* footer background */
+  --color-brand-dark: #1C1C1C;   /* dark hero sections */
+  --color-surface: #f4f4f5;      /* card / panel background */
+  --color-muted: #fafafa;        /* subtle background */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Expose brand tokens to Tailwind — use bg-accent, text-accent-text, etc. */
+  --color-accent: var(--color-accent);
+  --color-accent-text: var(--color-accent-text);
+  --color-footer: var(--color-footer);
+  --color-brand-dark: var(--color-brand-dark);
+  --color-surface: var(--color-surface);
   --font-sans: var(--font-open-sans);
   --font-mono: var(--font-open-sans);
 }
@@ -48,19 +55,21 @@ h6 {
 }
 
 .brand-btn-primary {
-  background-color: var(--color-12);
-  color: var(--color-17);
-  border: 1px solid var(--color-12);
+  background-color: var(--color-accent);
+  color: var(--color-accent-text);
+  border: 1px solid var(--color-accent);
+  font-weight: 400;
 }
 
 .brand-btn-primary:hover {
-  background-color: #c38f45;
+  background-color: var(--color-accent-hover);
 }
 
 .brand-btn-secondary {
   background-color: transparent;
-  color: var(--color-17);
-  border: 1px solid var(--color-17);
+  color: var(--color-accent-text);
+  border: 1px solid var(--color-accent-text);
+  font-weight: 400;
 }
 
 .brand-btn-secondary:hover {

@@ -25,7 +25,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -55,7 +55,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -75,13 +75,14 @@ jobs:
       AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
       AIRTABLE_TABLE_NAME: ${{ secrets.AIRTABLE_TABLE_NAME }}
       AIRTABLE_VIEW_NAME: ${{ secrets.AIRTABLE_VIEW_NAME }}
+      AIRTABLE_CMS_BASE_ID: ${{ secrets.AIRTABLE_CMS_BASE_ID }}
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
