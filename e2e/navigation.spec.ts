@@ -6,7 +6,7 @@ test.describe('Navigation', () => {
 
     for (const route of routes) {
       await page.goto(route);
-      await expect(page.locator('header')).toBeVisible();
+      await expect(page.locator('header').first()).toBeVisible();
     }
   });
 
@@ -18,7 +18,7 @@ test.describe('Navigation', () => {
 
   test('navigates from home to directors via header', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /réalisateurs/i }).first().click();
+    await page.getByRole('link', { name: /directors/i }).first().click();
     await expect(page).toHaveURL(/directors/);
   });
 });
