@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -51,7 +51,7 @@ jobs:
       AIRTABLE_VIEW_NAME: ${{ secrets.AIRTABLE_VIEW_NAME }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -78,7 +78,7 @@ jobs:
       AIRTABLE_CMS_BASE_ID: ${{ secrets.AIRTABLE_CMS_BASE_ID }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
