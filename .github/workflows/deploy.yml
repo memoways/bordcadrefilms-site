@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    # main → production, develop → staging
+    # main → production, develop → staging/preview
     branches: [main, develop]
   workflow_dispatch:
     inputs:
@@ -11,7 +11,7 @@ on:
         required: true
         default: production
         type: choice
-        options: [production, staging]
+        options: [production, preview]
 
 # Never cancel an in-flight deploy — let it finish or fail cleanly
 concurrency:
@@ -21,6 +21,7 @@ concurrency:
 # Least-privilege: read-only by default
 permissions:
   contents: read
+  deployments: write
 
 jobs:
   quality:
@@ -48,13 +49,22 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          # Airtable — CMS base
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
           AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+          AIRTABLE_CMS_BASE_ID: ${{ secrets.AIRTABLE_CMS_BASE_ID }}
           AIRTABLE_TABLE_NAME: ${{ secrets.AIRTABLE_TABLE_NAME }}
           AIRTABLE_VIEW_NAME: ${{ secrets.AIRTABLE_VIEW_NAME }}
+          # Clerk
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          NEXT_PUBLIC_CLERK_SIGN_IN_URL: /admin/sign-in
+          NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: /admin
+          # Cache revalidation
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
 
   deploy-production:
-    name: Deploy → Production (Coolify)
+    name: Deploy → Production (Vercel)
     needs: quality
     runs-on: ubuntu-latest
     # Only deploy to prod from main, or manual dispatch targeting production
@@ -66,27 +76,45 @@ jobs:
       url: https://bordcadrefilms.com
 
     steps:
-      - name: Trigger Coolify deploy
-        run: |
-          curl --fail --silent --show-error -X GET \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_WEBHOOK_TOKEN }}" \
-            "${{ secrets.COOLIFY_WEBHOOK_URL }}"
+      - uses: actions/checkout@v4
 
-  deploy-staging:
-    name: Deploy → Staging (Coolify)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Deploy to Vercel (production)
+        run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  deploy-preview:
+    name: Deploy → Preview (Vercel)
     needs: quality
     runs-on: ubuntu-latest
-    # Only deploy to staging from develop, or manual dispatch targeting staging
+    # Deploy preview from develop, or manual dispatch targeting preview
     if: |
       github.ref == 'refs/heads/develop' ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'preview')
     environment:
-      name: staging
-      url: https://staging.bordcadrefilms.com
+      name: preview
+      url: https://bordcadrefilms-git-develop.vercel.app
 
     steps:
-      - name: Trigger Coolify staging deploy
-        run: |
-          curl --fail --silent --show-error -X GET \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_STAGING_WEBHOOK_TOKEN }}" \
-            "${{ secrets.COOLIFY_STAGING_WEBHOOK_URL }}"
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Deploy to Vercel (preview)
+        run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --yes
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
