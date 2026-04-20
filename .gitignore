@@ -78,13 +78,9 @@ proxy.ts
 .mcp.json
 .serena/
 
-# Markdown — only track essential project files
+# Markdown — only README and GitHub templates go to the remote
 *.md
 !README.md
-!CLAUDE.md
-!AGENTS.md
-!BEST_PRACTICES.md
-!GIT_WORKFLOW.md
 !.github/**/*.md
 
 # clerk configuration (can include secrets)
