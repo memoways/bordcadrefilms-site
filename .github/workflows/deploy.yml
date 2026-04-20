@@ -2,23 +2,23 @@ name: Deploy
 
 on:
   push:
-    # main → production, develop → staging/preview
-    branches: [main, develop]
+    # test/vercel-ci → Vercel preview (validation only)
+    # develop + main → Coolify (not wired yet — webhooks to be added)
+    branches: [test/vercel-ci]
   workflow_dispatch:
     inputs:
       environment:
         description: Target environment
         required: true
-        default: production
+        default: vercel-preview
         type: choice
-        options: [production, preview]
+        options: [vercel-preview]
 
 # Never cancel an in-flight deploy — let it finish or fail cleanly
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
-# Least-privilege: read-only by default
 permissions:
   contents: read
   deployments: write
@@ -49,59 +49,27 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
-          # Airtable — CMS base
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
           AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
           AIRTABLE_CMS_BASE_ID: ${{ secrets.AIRTABLE_CMS_BASE_ID }}
           AIRTABLE_TABLE_NAME: ${{ secrets.AIRTABLE_TABLE_NAME }}
           AIRTABLE_VIEW_NAME: ${{ secrets.AIRTABLE_VIEW_NAME }}
-          # Clerk
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           NEXT_PUBLIC_CLERK_SIGN_IN_URL: /admin/sign-in
           NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: /admin
-          # Cache revalidation
           REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
 
-  deploy-production:
-    name: Deploy → Production (Vercel)
+  deploy-vercel-preview:
+    name: Deploy → Vercel preview (test/vercel-ci)
     needs: quality
     runs-on: ubuntu-latest
-    # Only deploy to prod from main, or manual dispatch targeting production
     if: |
-      github.ref == 'refs/heads/main' ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+      github.ref == 'refs/heads/test/vercel-ci' ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'vercel-preview')
     environment:
-      name: production
-      url: https://bordcadrefilms.com
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-
-      - name: Deploy to Vercel (production)
-        run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-  deploy-preview:
-    name: Deploy → Preview (Vercel)
-    needs: quality
-    runs-on: ubuntu-latest
-    # Deploy preview from develop, or manual dispatch targeting preview
-    if: |
-      github.ref == 'refs/heads/develop' ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'preview')
-    environment:
-      name: preview
-      url: https://bordcadrefilms-git-develop.vercel.app
+      name: vercel-preview
+      url: https://bordcadrefilms-git-test-vercel-ci.vercel.app
 
     steps:
       - uses: actions/checkout@v4
@@ -118,3 +86,19 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+# ---------------------------------------------------------------------------
+# TODO — Coolify (wire when infra is ready)
+# ---------------------------------------------------------------------------
+# deploy-staging:
+#   name: Deploy → Staging (Coolify)
+#   on: push to develop
+#   steps:
+#     - curl Coolify webhook: secrets.COOLIFY_STAGING_WEBHOOK_TOKEN / URL
+#
+# deploy-production:
+#   name: Deploy → Production (Coolify)
+#   on: push to main
+#   steps:
+#     - curl Coolify webhook: secrets.COOLIFY_WEBHOOK_TOKEN / URL
+# ---------------------------------------------------------------------------
