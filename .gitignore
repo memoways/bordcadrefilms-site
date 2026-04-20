@@ -81,6 +81,9 @@ proxy.ts
 # Markdown — only README and GitHub templates go to the remote
 *.md
 !README.md
+!GIT_WORKFLOW.md
+!AGENTS.md
+!CLAUDE.md
 !.github/**/*.md
 
 # clerk configuration (can include secrets)
