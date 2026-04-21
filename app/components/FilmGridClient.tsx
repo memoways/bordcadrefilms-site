@@ -120,7 +120,7 @@ export default function FilmGridClient({ films, limit, initialSearch = "" }: { f
       {displayed.length > 0 ? (
         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full">
           {displayed.map((film, idx) => (
-            <FilmCard key={film.slug || film.title || idx} film={film} priority={idx === 0} />
+            <FilmCard key={film.slug || film.title || idx} film={film} priority={idx < 3} />
           ))}
         </section>
       ) : (

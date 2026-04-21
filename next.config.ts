@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: __dirname,
+  },
   experimental: {
     // Keep prefetched route payloads warm longer for instant back-and-forth navigation.
     staleTimes: {
@@ -9,6 +12,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    minimumCacheTTL: 86400, // cache optimized images 24h — survives Airtable CDN URL expiry
     remotePatterns: [
       {
         protocol: "https",
