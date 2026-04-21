@@ -3,84 +3,62 @@
 import { useEffect, useRef, useState } from "react";
 import type { BCFNumbersData } from "../lib/home";
 
-function CounterItem({ number, label }: { number: number; label: string }) {
+function Counter({ target }: { target: number }) {
   const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
+  const spanRef = useRef<HTMLSpanElement>(null);
   const started = useRef(false);
 
   useEffect(() => {
-    const el = ref.current;
+    const el = spanRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !started.current) {
           started.current = true;
-          const duration = 1200;
+          const duration = 1400;
           const startTime = performance.now();
-          const animate = (now: number) => {
-            const progress = Math.min((now - startTime) / duration, 1);
+          const tick = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.round(eased * number));
-            if (progress < 1) requestAnimationFrame(animate);
+            setCount(Math.round(eased * target));
+            if (progress < 1) requestAnimationFrame(tick);
           };
-          requestAnimationFrame(animate);
+          requestAnimationFrame(tick);
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.2 }
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [number]);
+  }, [target]);
 
-  return (
-    <div ref={ref} style={{ width: 164, minWidth: 120, padding: "0 16px 16px 0" }}>
-      <div style={{ fontSize: 32, lineHeight: "43px", fontWeight: 400, color: "#F9D689" }}>
-        {count}
-      </div>
-      <div style={{ fontSize: 16, fontWeight: 500, color: "#ffffff", marginTop: 16 }}>
-        {label}
-      </div>
-    </div>
-  );
+  return <span ref={spanRef}>{count}</span>;
 }
 
 export default function AboutCountersClient({ numbers }: { numbers: BCFNumbersData[] }) {
   return (
-    <section
-      style={{ backgroundColor: "#1C1C1C", padding: "32px 0 48px", color: "#ffffff" }}
-      className="w-full"
-    >
-      <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row gap-8">
-        {/* Left: title */}
-        <div className="flex-shrink-0 md:w-[340px]">
-          <h2
-            style={{
-              fontSize: 35,
-              fontWeight: 300,
-              color: "#ffffff",
-              lineHeight: 1.1,
-              margin: 0,
-            }}
-          >
+    <section className="w-full bg-[#111] py-20 px-6 md:px-12">
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 md:gap-24">
+        {/* Title */}
+        <div className="md:w-64 flex-shrink-0 flex flex-col justify-start pt-1">
+          <h2 className="text-4xl md:text-5xl font-bold text-white leading-tight">
             Bord Cadre films
           </h2>
-          <p
-            style={{
-              fontSize: 17.6,
-              fontWeight: 300,
-              color: "#ffffff",
-              marginTop: 6,
-              fontStyle: "normal",
-            }}
-          >
-            by the numbers
-          </p>
+          <p className="text-lg text-white/60 italic mt-2">by the numbers</p>
         </div>
 
-        {/* Right: counters */}
-        <div className="flex flex-wrap">
+        {/* Counter grid */}
+        <div className="flex-1 grid grid-cols-2 gap-x-10 gap-y-12">
           {numbers.map((item) => (
-            <CounterItem key={item.order} number={item.number} label={item.label} />
+            <div key={item.order} className="flex flex-col gap-2">
+              <span className="text-6xl md:text-7xl font-bold text-[#E0A75D] leading-none tabular-nums">
+                <Counter target={item.number} />
+              </span>
+              <span className="text-white text-sm md:text-base leading-snug mt-1">
+                {item.label}
+              </span>
+            </div>
           ))}
         </div>
       </div>
