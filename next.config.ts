@@ -1,6 +1,10 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   experimental: {
     // Keep prefetched route payloads warm longer for instant back-and-forth navigation.
     staleTimes: {
