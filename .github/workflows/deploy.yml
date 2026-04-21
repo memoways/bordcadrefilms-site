@@ -1,0 +1,104 @@
+name: Deploy
+
+on:
+  push:
+    # test/vercel-ci → Vercel preview (validation only)
+    # develop + main → Coolify (not wired yet — webhooks to be added)
+    branches: [test/vercel-ci]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: vercel-preview
+        type: choice
+        options: [vercel-preview]
+
+# Never cancel an in-flight deploy — let it finish or fail cleanly
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  quality:
+    name: Pre-deploy checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+          AIRTABLE_CMS_BASE_ID: ${{ secrets.AIRTABLE_CMS_BASE_ID }}
+          AIRTABLE_TABLE_NAME: ${{ secrets.AIRTABLE_TABLE_NAME }}
+          AIRTABLE_VIEW_NAME: ${{ secrets.AIRTABLE_VIEW_NAME }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          NEXT_PUBLIC_CLERK_SIGN_IN_URL: /admin/sign-in
+          NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: /admin
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+
+  deploy-vercel-preview:
+    name: Deploy → Vercel preview (test/vercel-ci)
+    needs: quality
+    runs-on: ubuntu-latest
+    if: |
+      github.ref == 'refs/heads/test/vercel-ci' ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'vercel-preview')
+    environment:
+      name: vercel-preview
+      url: https://bordcadrefilms-git-test-vercel-ci.vercel.app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Deploy to Vercel (preview)
+        run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --yes
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+# ---------------------------------------------------------------------------
+# TODO — Coolify (wire when infra is ready)
+# ---------------------------------------------------------------------------
+# deploy-staging:
+#   name: Deploy → Staging (Coolify)
+#   on: push to develop
+#   steps:
+#     - curl Coolify webhook: secrets.COOLIFY_STAGING_WEBHOOK_TOKEN / URL
+#
+# deploy-production:
+#   name: Deploy → Production (Coolify)
+#   on: push to main
+#   steps:
+#     - curl Coolify webhook: secrets.COOLIFY_WEBHOOK_TOKEN / URL
+# ---------------------------------------------------------------------------
