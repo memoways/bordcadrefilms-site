@@ -72,7 +72,6 @@ skills-lock.json
 # temp / dev artifacts
 status-showcase-next/
 perf-*.json
-proxy.ts
 
 # MCP / AI tooling config
 .mcp.json
