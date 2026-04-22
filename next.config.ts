@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -9,6 +10,16 @@ const nextConfig: NextConfig = {
     staleTimes: {
       dynamic: 900,
       static: 900,
+    },
+  },
+  turbopack: {
+    // Pin the root to this project so Turbopack doesn't pick up the stray
+    // package.json at C:\Users\souhail and watch the entire user home dir.
+    root: process.cwd(),
+    // Alias tailwindcss to its absolute path so enhanced-resolve never traverses
+    // up to the stray C:\Users\souhail\package.json and fails to find it there.
+    resolveAlias: {
+      tailwindcss: path.resolve(process.cwd(), "node_modules/tailwindcss"),
     },
   },
   images: {
