@@ -1,6 +1,14 @@
 import { cache } from "react";
 import { firstString, getValidImageUrl } from "./utils";
-import { MOCK_HERO } from "./mock-data";
+
+const FALLBACK_HERO = {
+  videoUrl: "",
+  posterUrl: "",
+  title: "Bord Cadre Films",
+  subtitle:
+    "Independent film production company based in Geneva, specialising in arthouse features and short films, with an international presence at festivals and co-productions.",
+  source: "fallback" as const,
+};
 
 // Hero content lives as a row in the shared SiteConfig table ({section} = "hero")
 const HERO_TABLE_NAME = "SiteConfig";
@@ -24,7 +32,7 @@ function normalizeHero(fields: AirtableFields): HeroVideoData {
     firstString(fields.video) ||
     getValidImageUrl(fields.videoFile) ||
     getValidImageUrl(fields["Video File"]) ||
-    MOCK_HERO.videoUrl;
+    FALLBACK_HERO.videoUrl;
 
   const posterUrl =
     firstString(fields.poster_url) ||
@@ -33,10 +41,10 @@ function normalizeHero(fields: AirtableFields): HeroVideoData {
     getValidImageUrl(fields.poster) ||
     getValidImageUrl(fields["Poster"]) ||
     getValidImageUrl(fields.posterFile) ||
-    MOCK_HERO.posterUrl;
+    FALLBACK_HERO.posterUrl;
 
-  const title = firstString(fields.title) || firstString(fields["Hero Title"]) || MOCK_HERO.title;
-  const subtitle = firstString(fields.subtitle) || firstString(fields["Hero Subtitle"]) || MOCK_HERO.subtitle;
+  const title = firstString(fields.title) || firstString(fields["Hero Title"]) || FALLBACK_HERO.title;
+  const subtitle = firstString(fields.subtitle) || firstString(fields["Hero Subtitle"]) || FALLBACK_HERO.subtitle;
 
   return { videoUrl, posterUrl, title, subtitle, source: "airtable" };
 }
@@ -46,7 +54,7 @@ export const readHeroVideo = cache(async function readHeroVideo(): Promise<HeroV
   const apiKey = process.env.AIRTABLE_API_KEY;
 
   if (!baseId || !apiKey) {
-    return MOCK_HERO;
+    return FALLBACK_HERO;
   }
 
   // Fetch all SiteConfig rows — no filterByFormula so the URL is stable
@@ -61,7 +69,7 @@ export const readHeroVideo = cache(async function readHeroVideo(): Promise<HeroV
     });
 
     if (!res.ok) {
-      return MOCK_HERO;
+      return FALLBACK_HERO;
     }
 
     const data = (await res.json()) as {
@@ -71,10 +79,10 @@ export const readHeroVideo = cache(async function readHeroVideo(): Promise<HeroV
     const fields = data.records?.find(
       (r) => typeof r.fields?.section === "string" && r.fields.section === "hero"
     )?.fields;
-    if (!fields) return MOCK_HERO;
+    if (!fields) return FALLBACK_HERO;
 
     return normalizeHero(fields);
   } catch (error) {
-    return MOCK_HERO;
+    return FALLBACK_HERO;
   }
 });

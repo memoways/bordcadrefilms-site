@@ -1,6 +1,11 @@
 import { cache } from "react";
 import { firstString, getValidImageUrl } from "./utils";
-import { MOCK_FOUNDER, MOCK_FESTIVAL_PHOTOS } from "./mock-data";
+const FALLBACK_FOUNDER = {
+  name: "Bord Cadre Films",
+  title: "Founder",
+  bio: "Founded in 2008 in Geneva, Bord Cadre Films supports filmmakers from around the world in developing, financing, and producing ambitious arthouse films. The company has established itself as a key player in European independent cinema, with a constant presence at major international festivals — Cannes, Venice, Locarno, Berlin.",
+  source: "fallback" as const,
+};
 
 const BASE_ID = (process.env.AIRTABLE_CMS_BASE_ID || process.env.AIRTABLE_BASE_ID)!;
 const API_KEY = process.env.AIRTABLE_API_KEY!;
@@ -45,7 +50,7 @@ export type FestivalPhotosResponse = {
 };
 
 function fallbackBio(): FounderBioData {
-  return MOCK_FOUNDER;
+  return FALLBACK_FOUNDER;
 }
 
 export const readFounderBio = cache(async function readFounderBio(): Promise<FounderBioData> {
@@ -77,7 +82,7 @@ export const readFounderBio = cache(async function readFounderBio(): Promise<Fou
 
     return {
       name: firstString(fields.name) || "Bord Cadre Films",
-      title: firstString(fields.title) || "Fondateur",
+      title: firstString(fields.title) || "Founder",
       bio: firstString(fields.bio) || fallbackBio().bio,
       image: getValidImageUrl(fields.image),
       source: "airtable",
@@ -139,7 +144,7 @@ export const readTeam = cache(async function readTeam(): Promise<TeamResponse> {
 
 export const readFestivalPhotos = cache(async function readFestivalPhotos(): Promise<FestivalPhotosResponse> {
   if (!BASE_ID || !API_KEY) {
-    return { photos: MOCK_FESTIVAL_PHOTOS, total: MOCK_FESTIVAL_PHOTOS.length, source: "fallback" };
+    return { photos: [], total: [].length, source: "fallback" };
   }
 
   try {
@@ -161,7 +166,7 @@ export const readFestivalPhotos = cache(async function readFestivalPhotos(): Pro
     };
 
     if (!data.records || data.records.length === 0) {
-      return { photos: MOCK_FESTIVAL_PHOTOS, total: MOCK_FESTIVAL_PHOTOS.length, source: "fallback" };
+      return { photos: [], total: [].length, source: "fallback" };
     }
 
     const photos: FestivalPhotoData[] = data.records
@@ -183,6 +188,6 @@ export const readFestivalPhotos = cache(async function readFestivalPhotos(): Pro
     };
   } catch (error) {
     console.error("[Airtable] Festival Photos fetch error:", error);
-    return { photos: MOCK_FESTIVAL_PHOTOS, total: MOCK_FESTIVAL_PHOTOS.length, source: "fallback" };
+    return { photos: [], total: [].length, source: "fallback" };
   }
 });
