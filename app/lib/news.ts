@@ -1,6 +1,5 @@
 import { cache } from 'react';
 import { firstString, getValidImageUrl } from './utils';
-import { MOCK_NEWS_ITEMS } from './mock-data';
 
 const BASE_ID = (process.env.AIRTABLE_CMS_BASE_ID || process.env.AIRTABLE_BASE_ID)!;
 const NEWS_TABLE = process.env.AIRTABLE_NEWS_TABLE ?? 'News';
@@ -92,7 +91,7 @@ export const getNews = cache(async (): Promise<NewsItem[]> => {
       .filter((item): item is NewsItem => item !== null);
   } catch (err) {
     console.error('[Airtable] News fetch error:', err);
-    return MOCK_NEWS_ITEMS;
+    return [];
   }
 });
 

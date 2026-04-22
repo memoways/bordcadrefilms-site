@@ -1,6 +1,14 @@
 import { cache } from "react";
 import { firstString, getValidImageUrl } from "./utils";
-import { MOCK_HOME_ABOUT, MOCK_BCF_NUMBERS, MOCK_NEWS } from "./mock-data";
+const FALLBACK_HOME_ABOUT = {
+  title: "Bord Cadre Films",
+  subtitle: "Since 2008",
+  description:
+    "Bord Cadre Films is an independent Swiss production company specializing in the development, financing, and production of international feature films. Its editorial line is distinguished by its strong cultural diversity and social awareness.",
+  cta_text: "Learn more",
+  cta_link: "/about",
+  source: "fallback" as const,
+};
 
 const BASE_ID = (process.env.AIRTABLE_CMS_BASE_ID || process.env.AIRTABLE_BASE_ID)!;
 const API_KEY = process.env.AIRTABLE_API_KEY!;
@@ -45,11 +53,11 @@ export type BCFNumbersResponse = {
 };
 
 function fallbackAbout(): HomeAboutData {
-  return MOCK_HOME_ABOUT;
+  return FALLBACK_HOME_ABOUT;
 }
 
 function fallbackNumbers(): BCFNumbersResponse {
-  return { numbers: MOCK_BCF_NUMBERS, source: "fallback" };
+  return { numbers: [], source: "fallback" };
 }
 
 export const readHomeAbout = cache(async function readHomeAbout(): Promise<HomeAboutData> {
@@ -81,11 +89,11 @@ export const readHomeAbout = cache(async function readHomeAbout(): Promise<HomeA
 
     return {
       title: firstString(fields.title) || "Bord Cadre Films",
-      subtitle: firstString(fields.subtitle) || "Depuis 2008",
+      subtitle: firstString(fields.subtitle) || "Since 2008",
       description:
         firstString(fields.description) ||
-        "Société de production cinématographique basée à Genève, spécialisée dans la production de films d'auteur, longs et courts métrages, avec une présence internationale dans les festivals et coproductions.",
-      cta_text: firstString(fields.cta_text) || "En savoir plus",
+        "Independent film production company based in Geneva, specialising in arthouse features and short films, with an international presence at festivals and co-productions.",
+      cta_text: firstString(fields.cta_text) || "Learn more",
       cta_link: firstString(fields.cta_link) || "/about",
       background_image: firstString(fields.background_image),
       source: "airtable",
@@ -142,8 +150,7 @@ export const readHomeNews = cache(async function readHomeNews(
   limit = 3
 ): Promise<HomeNewsResponse> {
   if (!BASE_ID || !API_KEY) {
-    const items = MOCK_NEWS.slice(0, limit);
-    return { items, total: items.length, source: "fallback" };
+    return { items: [], total: 0, source: "fallback" };
   }
 
   try {

@@ -13,9 +13,6 @@ export default function HomeHero({ hero }: HomeHeroProps) {
 
   return (
     <section className="w-full min-h-screen flex flex-col items-center justify-center relative text-white overflow-hidden">
-      {hero.posterUrl && (
-        <link rel="preload" as="image" href={hero.posterUrl} fetchPriority="high" />
-      )}
       <video
         className="absolute inset-0 w-full h-full object-cover z-0"
         src={hero.videoUrl}
@@ -24,7 +21,6 @@ export default function HomeHero({ hero }: HomeHeroProps) {
         muted
         playsInline
         preload="auto"
-        poster={hero.posterUrl}
         style={{ minHeight: "100vh", minWidth: "100vw" }}
       />
       <div className="absolute inset-0 bg-linear-to-b from-black/40 via-[#1f1f1f]/60 to-[#1f1f1f]/80" />
