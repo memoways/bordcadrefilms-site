@@ -1,8 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: __dirname,
+    root: process.cwd(),
+    resolveAlias: {
+      tailwindcss: path.resolve(process.cwd(), "node_modules/tailwindcss"),
+    },
   },
   experimental: {
     // Keep prefetched route payloads warm longer for instant back-and-forth navigation.
@@ -11,8 +15,20 @@ const nextConfig: NextConfig = {
       static: 900,
     },
   },
+  async headers() {
+    return [
+      {
+        // Static assets in /public/news/ — long cache, they're immutable placeholders
+        source: "/news/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+    ];
+  },
   images: {
-    minimumCacheTTL: 86400, // cache optimized images 24h — survives Airtable CDN URL expiry
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 2678400, // 31 days — Airtable images are stable once uploaded
     remotePatterns: [
       {
         protocol: "https",
@@ -22,6 +38,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "cdn.cmsfly.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "public.blob.vercel-storage.com",
         pathname: "/**",
       },
     ],

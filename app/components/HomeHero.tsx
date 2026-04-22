@@ -13,6 +13,9 @@ export default function HomeHero({ hero }: HomeHeroProps) {
 
   return (
     <section className="w-full min-h-screen flex flex-col items-center justify-center relative text-white overflow-hidden">
+      {hero.posterUrl && (
+        <link rel="preload" as="image" href={hero.posterUrl} fetchPriority="high" />
+      )}
       <video
         className="absolute inset-0 w-full h-full object-cover z-0"
         src={hero.videoUrl}
