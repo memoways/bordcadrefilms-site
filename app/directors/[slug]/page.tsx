@@ -185,7 +185,7 @@ export default async function DirectorDetailPage({
 										<p className="mt-1 line-clamp-2 text-base leading-snug text-zinc-800">
 											{entry.description}
 										</p>
-										<p className="mt-2 text-sm text-zinc-500">Publication date</p>
+										{entry.year && <p className="mt-2 text-sm text-zinc-500">{entry.year}</p>}
 									</div>
 								</Link>
 							</article>

@@ -34,7 +34,7 @@ const suisseIntl = localFont({
 
 export const metadata: Metadata = {
   title: "Bord Cadre Films",
-  description: "Société de production cinématographique indépendante basée à Genève.",
+  description: "Independent film production company based in Geneva, specialising in arthouse features and international co-productions.",
 };
 
 export default function RootLayout({

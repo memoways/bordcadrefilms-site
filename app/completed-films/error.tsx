@@ -16,22 +16,22 @@ export default function FilmsError({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-50 px-4 text-center">
-      <h1 className="text-2xl font-bold text-zinc-900">Catalogue indisponible</h1>
+      <h1 className="text-2xl font-bold text-zinc-900">Catalogue unavailable</h1>
       <p className="max-w-md text-zinc-600">
-        Le catalogue de films n&apos;a pas pu être chargé. La connexion à la base de données est peut-être temporairement interrompue.
+        The film catalogue could not be loaded. The database connection may be temporarily unavailable.
       </p>
       <div className="flex gap-3">
         <button
           onClick={reset}
           className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-normal text-white transition-colors hover:bg-zinc-700"
         >
-          Réessayer
+          Try again
         </button>
         <Link
           href="/"
           className="rounded-lg border border-zinc-300 px-5 py-2 text-sm font-normal text-zinc-700 transition-colors hover:bg-zinc-100"
         >
-          Retour à l&apos;accueil
+          Back to home
         </Link>
       </div>
     </div>

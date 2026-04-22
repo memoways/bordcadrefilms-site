@@ -39,7 +39,7 @@ export default function Header() {
           className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 text-zinc-900 transition-colors hover:bg-zinc-100 md:hidden"
           aria-expanded={isMobileMenuOpen}
           aria-controls="mobile-nav-menu"
-          aria-label={isMobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           onClick={() => setIsMobileMenuOpen((prev) => !prev)}
         >
           <span className="sr-only">Menu</span>
