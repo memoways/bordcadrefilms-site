@@ -13,15 +13,17 @@ export const revalidate = 900;
 
 async function DirectorsContent() {
   const directors = await getDirectors();
-  return <DirectorGrid directors={directors} showBio={false} />;
+  return <DirectorGrid directors={directors} />;
 }
 
 export default function DirectorsPage() {
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground px-4 py-16">
-      <div className="max-w-6xl w-full flex flex-col gap-8 items-center">
-        <h1 className="text-3xl font-bold mb-8">Directors</h1>
-        <Suspense fallback={<DirectorGridSkeleton count={6} />}>
+    <main className="flex flex-col min-h-screen bg-white text-zinc-900">
+      <div className="w-full bg-[#1C1C1C] py-16 flex items-center justify-center">
+        <h1 className="text-5xl font-light text-accent">Directors</h1>
+      </div>
+      <div className="max-w-6xl w-full mx-auto px-4 py-16 flex flex-col gap-8">
+        <Suspense fallback={<DirectorGridSkeleton count={10} />}>
           <DirectorsContent />
         </Suspense>
       </div>

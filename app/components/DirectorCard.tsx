@@ -3,34 +3,36 @@ import Link from "next/link";
 import { type Director } from "../lib/catalog";
 import { getValidImageUrl } from "../lib/utils";
 
-export default function DirectorCard({ director, showBio = true, priority = false }: { director: Director; showBio?: boolean; priority?: boolean }) {
+export default function DirectorCard({ director, priority = false }: { director: Director; priority?: boolean }) {
   const imgUrl = getValidImageUrl(director.profilePicture);
   return (
     <Link
       href={`/directors/${director.slug}`}
       prefetch
-      className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+      className="flex flex-col items-center gap-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
     >
-      <article className="bg-white rounded-lg border border-zinc-200 shadow-md overflow-hidden flex flex-col items-center p-6 transition hover:-translate-y-0.5 hover:shadow-lg">
-        <div className="relative w-32 h-32 mb-4">
-          {imgUrl ? (
-            <Image
-              src={imgUrl}
-              alt={director.name}
-              fill
-              className="object-cover rounded-full"
-              sizes="128px"
-              priority={priority}
-            />
-          ) : (
-            <div className="w-32 h-32 bg-zinc-100 flex items-center justify-center text-zinc-500 rounded-full">
-              No image
-            </div>
-          )}
-        </div>
-        <h2 className="text-lg font-medium text-zinc-900 group-hover:text-zinc-700">{director.name}</h2>
-        {showBio && <p className="text-zinc-600 text-sm text-center mt-2 font-light">{director.bio}</p>}
-      </article>
+      <div className="relative w-4/5 max-w-[144px] aspect-[4/5] overflow-hidden rounded-full border border-zinc-200">
+        {imgUrl ? (
+          <Image
+            src={imgUrl}
+            alt={director.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 30vw, 144px"
+            priority={priority}
+          />
+        ) : (
+          <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-400 text-xs">
+            No photo
+          </div>
+        )}
+      </div>
+      <h2 className="mt-5 text-xl font-normal text-center text-zinc-900 px-5 leading-snug line-clamp-2">{director.name}</h2>
+      {director.country && (
+        <span className="mt-4 px-2 py-0.5 text-sm bg-zinc-100 rounded text-zinc-700">
+          {director.country}
+        </span>
+      )}
     </Link>
   );
 }

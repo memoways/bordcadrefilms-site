@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import HomeHero from "./components/HomeHero";
 import HomeAboutSection from "./components/HomeAboutSection";
+import AboutCounters from "./components/AboutCounters";
 import HomeNewsSection from "./components/HomeNewsSection";
 import HomeFilmGridPreview from "./components/HomeFilmGridPreview";
 import HomeDirectorsPreview from "./components/HomeDirectorsPreview";
@@ -47,7 +48,8 @@ export default async function Home() {
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <div className="flex flex-col w-full min-h-screen bg-background text-foreground">
         <HomeHero hero={hero} />
-         <HomeAboutSection />
+        <HomeAboutSection />
+        <AboutCounters />
         <Suspense fallback={<NewsCarouselSkeleton />}>
           <HomeNewsSection />
         </Suspense>

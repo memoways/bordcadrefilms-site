@@ -15,6 +15,7 @@ export type Director = {
   bio?: string;
   profilePicture?: string;
   filmography?: string;
+  country?: string;
 };
 
 export const getFilms = cache(async (): Promise<Film[]> => {
@@ -35,6 +36,7 @@ export const getDirectors = cache(async (): Promise<Director[]> => {
         bio: film.bio,
         profilePicture: film.profilePicture,
         filmography: film.directorFilmography || film.filmography,
+        country: film.country?.split(/[|,/]/)[0]?.trim(),
       });
     }
   }

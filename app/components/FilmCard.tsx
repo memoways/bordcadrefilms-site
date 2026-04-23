@@ -21,7 +21,7 @@ export default function FilmCard({ film, priority = false }: { film: Film; prior
             alt={altText}
             fill
             className="object-contain"
-            sizes="(max-width: 768px) 100vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 320px"
             priority={priority}
             style={{ objectFit: "contain", background: "#f4f4f5" }}
           />

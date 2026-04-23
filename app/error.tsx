@@ -16,22 +16,22 @@ export default function GlobalError({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-50 px-4 text-center">
-      <h1 className="text-3xl font-bold text-zinc-900">Une erreur est survenue</h1>
+      <h1 className="text-3xl font-bold text-zinc-900">Something went wrong</h1>
       <p className="max-w-md text-zinc-600">
-        Le contenu n&apos;a pas pu être chargé. Veuillez réessayer ou revenir à l&apos;accueil.
+        Content could not be loaded. Please try again or return to the home page.
       </p>
       <div className="flex gap-3">
         <button
           onClick={reset}
           className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-normal text-white transition-colors hover:bg-zinc-700"
         >
-          Réessayer
+          Try again
         </button>
         <Link
           href="/"
           className="rounded-lg border border-zinc-300 px-5 py-2 text-sm font-normal text-zinc-700 transition-colors hover:bg-zinc-100"
         >
-          Retour à l&apos;accueil
+          Back to home
         </Link>
       </div>
     </div>
