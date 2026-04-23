@@ -36,7 +36,7 @@ export default function Header() {
 
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 text-zinc-900 transition-colors hover:bg-zinc-100 md:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-zinc-300 text-zinc-900 transition-colors hover:bg-zinc-100 md:hidden"
           aria-expanded={isMobileMenuOpen}
           aria-controls="mobile-nav-menu"
           aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
@@ -83,7 +83,7 @@ export default function Header() {
               <Link
                 href={item.href}
                 prefetch={item.prefetch}
-                className="block rounded-md px-2 py-2 text-zinc-900 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+                className="block rounded-md px-2 py-3 text-zinc-900 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
                 onClick={closeMobileMenu}
               >
                 {item.label}

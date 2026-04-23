@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { NewsItem } from "../lib/news";
@@ -12,15 +12,36 @@ type NewsCarouselProps = {
 
 export default function NewsCarousel({ items, autoPlayMs = 6500 }: NewsCarouselProps) {
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
-    if (items.length <= 1) return;
+    if (items.length <= 1 || paused) return;
     const id = window.setInterval(() => {
       setActive((prev) => (prev + 1) % items.length);
     }, autoPlayMs);
 
     return () => window.clearInterval(id);
-  }, [items.length, autoPlayMs]);
+  }, [items.length, autoPlayMs, paused]);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+    setPaused(true);
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const delta = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(delta) > 50) {
+      setActive((prev) =>
+        delta > 0
+          ? (prev + 1) % items.length
+          : (prev - 1 + items.length) % items.length
+      );
+    }
+    touchStartX.current = null;
+    setPaused(false);
+  }
 
   if (items.length === 0) return null;
 
@@ -38,7 +59,15 @@ export default function NewsCarousel({ items, autoPlayMs = 6500 }: NewsCarouselP
           </Link>
         </div>
 
-        <div className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+        <div
+          className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onFocus={() => setPaused(true)}
+          onBlur={() => setPaused(false)}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <div
             className="flex transition-transform duration-500 ease-out"
             style={{ transform: `translateX(-${active * 100}%)` }}
@@ -78,7 +107,7 @@ export default function NewsCarousel({ items, autoPlayMs = 6500 }: NewsCarouselP
                   </div>
 
                   <Link href={`/news/${item.slug}`} prefetch className="block focus:outline-none focus:ring-2 focus:ring-white rounded-2xl">
-                    <div className="relative w-full h-72 md:h-90 rounded-2xl overflow-hidden bg-zinc-100">
+                    <div className="relative w-full h-48 md:h-72 rounded-2xl overflow-hidden bg-zinc-100">
                       {item.image ? (
                         <Image
                           src={item.image}
@@ -105,16 +134,18 @@ export default function NewsCarousel({ items, autoPlayMs = 6500 }: NewsCarouselP
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex items-center justify-center gap-1">
           {items.map((item, index) => (
             <button
               key={item.slug}
               type="button"
               onClick={() => setActive(index)}
-              className={`h-2.5 rounded-full transition-all ${active === index ? "w-8 bg-zinc-900" : "w-2.5 bg-zinc-300 hover:bg-zinc-500"}`}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center"
               aria-label={`Show news slide ${index + 1}`}
               aria-pressed={active === index}
-            />
+            >
+              <span className={`block h-2.5 rounded-full transition-all ${active === index ? "w-8 bg-zinc-900" : "w-2.5 bg-zinc-300 hover:bg-zinc-500"}`} />
+            </button>
           ))}
         </div>
       </div>

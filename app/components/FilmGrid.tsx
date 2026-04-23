@@ -5,7 +5,7 @@ export default function FilmGrid({ films, limit, initialSearch }: { films: Film[
   if (!films || films.length === 0) {
     return (
       <div className="w-full text-center text-zinc-700 bg-zinc-100 p-4 rounded-lg">
-        Aucun film trouve. Verifiez la connexion Airtable ou les variables d&apos;environnement.
+        No films found. Check the Airtable connection or environment variables.
       </div>
     );
   }

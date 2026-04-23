@@ -11,14 +11,14 @@ export default function DirectorCard({ director, priority = false }: { director:
       prefetch
       className="flex flex-col items-center gap-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
     >
-      <div className="relative w-36 h-44 overflow-hidden rounded-full border border-zinc-200">
+      <div className="relative w-4/5 max-w-[144px] aspect-[4/5] overflow-hidden rounded-full border border-zinc-200">
         {imgUrl ? (
           <Image
             src={imgUrl}
             alt={director.name}
             fill
             className="object-cover"
-            sizes="144px"
+            sizes="(max-width: 640px) 30vw, 144px"
             priority={priority}
           />
         ) : (
@@ -27,7 +27,7 @@ export default function DirectorCard({ director, priority = false }: { director:
           </div>
         )}
       </div>
-      <h2 className="mt-5 text-xl font-normal text-center text-zinc-900 px-5 leading-snug">{director.name}</h2>
+      <h2 className="mt-5 text-xl font-normal text-center text-zinc-900 px-5 leading-snug line-clamp-2">{director.name}</h2>
       {director.country && (
         <span className="mt-4 px-2 py-0.5 text-sm bg-zinc-100 rounded text-zinc-700">
           {director.country}
