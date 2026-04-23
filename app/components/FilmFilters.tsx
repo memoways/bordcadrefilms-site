@@ -48,13 +48,16 @@ export default function FilmFilters({ years, genres, countries, values, onChange
         </select>
       </label>
 
-      <button
-        type="button"
-        onClick={() => onChange({ year: "", genre: "", country: "" })}
-        className="h-11 rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
-      >
-        Reset
-      </button>
+      <div className="block">
+        <span className="mb-1 block h-5 lg:hidden" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => onChange({ year: "", genre: "", country: "" })}
+          className="h-11 w-full rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
+        >
+          Reset
+        </button>
+      </div>
     </form>
   );
 }

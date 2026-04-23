@@ -1,8 +1,10 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type Film } from "../lib/airtable";
 import FilmCard from "./FilmCard";
 import FilmFilters, { type FilmFilterValues } from "./FilmFilters";
+
+const PAGE_SIZE = 12;
 
 function splitMultiValue(value?: string): string[] {
   if (!value) return [];
@@ -17,6 +19,7 @@ const EMPTY_FILTERS: FilmFilterValues = { year: "", genre: "", country: "" };
 export default function FilmGridClient({ films, limit, initialSearch = "" }: { films: Film[]; limit?: number; initialSearch?: string }) {
   const [search, setSearch] = useState(initialSearch);
   const [filters, setFilters] = useState<FilmFilterValues>(EMPTY_FILTERS);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const sourceFilms = useMemo(() => (limit ? films.slice(0, limit) : films), [films, limit]);
 
@@ -44,7 +47,7 @@ export default function FilmGridClient({ films, limit, initialSearch = "" }: { f
     [sourceFilms]
   );
 
-  const displayed = useMemo(() => {
+  const filtered = useMemo(() => {
     if (limit) return sourceFilms;
 
     const normalizedSearch = search.trim().toLowerCase();
@@ -71,14 +74,25 @@ export default function FilmGridClient({ films, limit, initialSearch = "" }: { f
     });
   }, [limit, search, filters, sourceFilms]);
 
+  const displayed = useMemo(
+    () => (limit ? filtered : filtered.slice(0, visibleCount)),
+    [limit, filtered, visibleCount]
+  );
+
+  const hasMore = !limit && filtered.length > visibleCount;
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, filters]);
+
   return (
     <div className="w-full">
       {!limit && (
         <div className="mb-10 rounded-2xl border border-zinc-200 bg-linear-to-b from-white to-zinc-50/70 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.45)] sm:p-6 transition-all duration-300">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Recherche et filtres</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Search and filters</p>
             <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-600">
-              {displayed.length} resultat{displayed.length > 1 ? "s" : ""}
+              {filtered.length} result{filtered.length > 1 ? "s" : ""}
             </span>
           </div>
 
@@ -93,16 +107,16 @@ export default function FilmGridClient({ films, limit, initialSearch = "" }: { f
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher un film, un realisateur, un genre..."
+              placeholder="Search a film, a director, a genre..."
               className="w-full rounded-xl border border-zinc-300 bg-white py-3 pl-12 pr-12 text-zinc-900 shadow-[0_1px_0_0_rgba(0,0,0,0.02)] placeholder:text-zinc-500 transition-all duration-200 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="absolute inset-y-0 right-3 my-auto h-8 rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100"
+                className="absolute inset-y-0 right-3 my-auto h-10 rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100"
               >
-                Effacer
+                Clear
               </button>
             )}
           </div>
@@ -118,14 +132,27 @@ export default function FilmGridClient({ films, limit, initialSearch = "" }: { f
       )}
 
       {displayed.length > 0 ? (
-        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full">
-          {displayed.map((film, idx) => (
-            <FilmCard key={film.slug || film.title || idx} film={film} priority={idx < 3} />
-          ))}
-        </section>
+        <>
+          <section className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 w-full">
+            {displayed.map((film, idx) => (
+              <FilmCard key={film.slug || film.title || idx} film={film} priority={limit ? idx < limit : idx < PAGE_SIZE} />
+            ))}
+          </section>
+          {hasMore && (
+            <div className="mt-10 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                className="rounded-full border border-zinc-300 bg-white px-8 py-3 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 hover:border-zinc-400"
+              >
+                Load more ({filtered.length - visibleCount} remaining)
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="w-full text-center text-zinc-700 bg-zinc-100 p-4 rounded-lg">
-          Aucun film ne correspond aux filtres.
+          No films match the current filters.
         </div>
       )}
     </div>
