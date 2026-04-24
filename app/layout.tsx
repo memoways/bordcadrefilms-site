@@ -5,6 +5,7 @@ import Script from "next/script";
 import Header from "./components/Header";
 import NewsletterModule from "./components/NewsletterModule";
 import Footer from "./components/Footer";
+import { getNews } from "./lib/news";
 
 const suisseIntl = localFont({
   src: [
@@ -38,18 +39,21 @@ export const metadata: Metadata = {
   description: "Independent film production company based in Geneva, specialising in arthouse features and international co-productions.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const news = await getNews();
+  const hasNews = news.length > 0;
+
   return (
     <html
       lang="fr"
       className={`${suisseIntl.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-black">
-        <Header />
+        <Header hasNews={hasNews} />
         <main className="flex-1 flex flex-col">
           {children}
           <div id="sc_a767ccc839044066" />
@@ -58,7 +62,7 @@ export default function RootLayout({
         <Footer />
         <Script
           src="https://simplecommenter.com/js/comments.min.js?id=sc_a767ccc839044066"
-          strategy="lazyOnload"
+          strategy="afterInteractive"
         />
       </body>
     </html>

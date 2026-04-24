@@ -2,6 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { getFilms } from "../../lib/catalog";
 import { readTeam } from "../../lib/about";
+import { getNews } from "../../lib/news";
 
 export const revalidate = 0; // Always fresh in admin
 
@@ -38,29 +39,35 @@ function StatCard({ label, value, sub, href, accent }: StatCardProps) {
 }
 
 const QUICK_ACTIONS = [
-  { label: "Edit home section", href: "/admin/home", desc: "Hero, About blurb, stats" },
+  { label: "Edit home page", href: "/admin/home", desc: "Hero, about blurb, numbers" },
+  { label: "Update about page", href: "/admin/about", desc: "Founder bio, festival gallery" },
   { label: "Manage team", href: "/admin/team", desc: "Add, reorder, edit members" },
-  { label: "Update about", href: "/admin/about", desc: "Founder bio, festival gallery" },
+  { label: "Manage news", href: "/admin/news", desc: "Publish updates, press, festivals" },
+  { label: "Social media", href: "/admin/social", desc: "Footer links — Instagram, LinkedIn, etc." },
 ];
 
-const ISR_TAGS = [
+const PUBLISH_TAGS = [
   { tag: "team", label: "Team", path: "/about" },
-  { tag: "site-config", label: "Site config", path: "/" },
-  { tag: "all", label: "All pages", path: "/" },
+  { tag: "news", label: "News", path: "/news" },
+  { tag: "social-media", label: "Social media", path: "footer" },
+  { tag: "site-config", label: "Home & about", path: "/" },
+  { tag: "all", label: "Everything", path: "all pages" },
 ];
 
 export default async function AdminDashboard() {
   const user = await currentUser();
 
-  const [filmsResult, teamResult] = await Promise.allSettled([
+  const [filmsResult, teamResult, newsResult] = await Promise.allSettled([
     getFilms(),
     readTeam(),
+    getNews(),
   ]);
 
   const filmCount = filmsResult.status === "fulfilled" ? filmsResult.value.length : "—";
   const teamCount = teamResult.status === "fulfilled" ? teamResult.value.total : "—";
+  const newsCount = newsResult.status === "fulfilled" ? newsResult.value.length : "—";
 
-  const firstName = user?.firstName ?? "Admin";
+  const firstName = user?.firstName ?? "there";
 
   return (
     <div className="max-w-4xl space-y-8">
@@ -70,22 +77,22 @@ export default async function AdminDashboard() {
           Hello, {firstName}
         </h1>
         <p className="text-sm text-zinc-500 mt-1">
-          Bord Cadre Films CMS — manage content, revalidate pages, track changes.
+          Welcome to the Bord Cadre Films content manager. Update pages and publish changes whenever you&apos;re ready.
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <StatCard label="Films" value={filmCount} sub="in catalogue" accent />
-        <StatCard label="Team members" value={teamCount} href="/admin/team" />
-        <StatCard label="Sprint" value="2 ✓" sub="Build passing" />
+        <StatCard label="Team" value={teamCount} sub="members" href="/admin/team" />
+        <StatCard label="News" value={newsCount} sub="published" href="/admin/news" />
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Quick actions */}
         <div>
           <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">
-            Quick actions
+            What would you like to do?
           </h2>
           <ul className="space-y-1.5">
             {QUICK_ACTIONS.map((a) => (
@@ -107,20 +114,20 @@ export default async function AdminDashboard() {
           </ul>
         </div>
 
-        {/* ISR revalidation */}
+        {/* Publish changes */}
         <div>
           <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">
-            Revalidate cache
+            Publish to site
           </h2>
           <ul className="space-y-1.5">
-            {ISR_TAGS.map((t) => (
+            {PUBLISH_TAGS.map((t) => (
               <li key={t.tag}>
-                <RevalidateButton tag={t.tag} label={t.label} path={t.path} />
+                <PublishButton tag={t.tag} label={t.label} path={t.path} />
               </li>
             ))}
           </ul>
           <p className="text-xs text-zinc-400 mt-3">
-            Triggers on-demand ISR flush via <code className="bg-zinc-100 px-1 rounded">/api/revalidate</code>
+            After editing, click here to make your changes live.
           </p>
         </div>
       </div>
@@ -128,8 +135,7 @@ export default async function AdminDashboard() {
   );
 }
 
-// Client component inline — small enough not to warrant a separate file
-function RevalidateButton({
+function PublishButton({
   tag,
   label,
   path,
@@ -149,7 +155,7 @@ function RevalidateButton({
           <span className="text-sm font-medium text-zinc-800">{label}</span>
           <span className="text-xs text-zinc-400 ml-2">{path}</span>
         </div>
-        <span className="text-xs text-zinc-400 font-mono">↺</span>
+        <span className="text-xs text-zinc-500">Publish →</span>
       </button>
     </form>
   );

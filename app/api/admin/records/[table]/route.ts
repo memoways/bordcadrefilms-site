@@ -10,6 +10,8 @@ const ALLOWED_TABLES = new Set([
   "BCFNumbers",
   "Team",
   "FestivalPhotos",
+  "News",
+  "SocialMedia",
 ]);
 
 function airtableHeaders() {

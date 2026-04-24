@@ -6,7 +6,7 @@ import { useState } from "react";
 
 type NavLink = { href: string; label: string; prefetch?: true };
 
-const NAV_LINKS: NavLink[] = [
+const ALL_NAV_LINKS: NavLink[] = [
   { href: "/", label: "Home" },
   { href: "/news", label: "News", prefetch: true },
   { href: "/completed-films", label: "Films", prefetch: true },
@@ -14,8 +14,11 @@ const NAV_LINKS: NavLink[] = [
   { href: "/about", label: "About", prefetch: true },
 ];
 
-export default function Header() {
+export default function Header({ hasNews = true }: { hasNews?: boolean }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const NAV_LINKS = hasNews
+    ? ALL_NAV_LINKS
+    : ALL_NAV_LINKS.filter((item) => item.href !== "/news");
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 

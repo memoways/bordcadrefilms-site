@@ -10,6 +10,7 @@ const ALLOWED_TAGS = new Set([
   "team",
   "festival-photos",
   "films",
+  "social-media",
   "all",
 ]);
 
@@ -20,6 +21,9 @@ const PATH_MAP: Record<string, string[]> = {
   team: ["/about"],
   "festival-photos": ["/about"],
   films: ["/completed-films"],
+  // Footer shows on every page — tag revalidation handles the fetch cache,
+  // plus nudge the key SSG paths so they regenerate.
+  "social-media": ["/", "/news", "/about", "/directors", "/completed-films"],
 };
 
 // POST /api/admin/revalidate
