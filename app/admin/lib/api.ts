@@ -1,5 +1,17 @@
 // Client-side helpers for admin mutations — called from "use client" components
 
+async function getResponseError(res: Response) {
+  const text = await res.text();
+  try {
+    const json = JSON.parse(text);
+    if (json?.error) return String(json.error);
+    if (json?.message) return String(json.message);
+    return JSON.stringify(json);
+  } catch {
+    return text;
+  }
+}
+
 export async function adminPatch(
   table: string,
   id: string,
@@ -10,7 +22,7 @@ export async function adminPatch(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, fields }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await getResponseError(res));
   return res.json();
 }
 
@@ -23,7 +35,7 @@ export async function adminPost(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fields }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await getResponseError(res));
   return res.json();
 }
 
@@ -32,7 +44,7 @@ export async function adminDelete(table: string, id: string) {
     `/api/admin/records/${encodeURIComponent(table)}?id=${encodeURIComponent(id)}`,
     { method: "DELETE" },
   );
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await getResponseError(res));
   return res.json();
 }
 
