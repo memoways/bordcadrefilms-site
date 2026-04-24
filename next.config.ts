@@ -9,10 +9,13 @@ const nextConfig: NextConfig = {
     },
   },
   experimental: {
-    // Keep prefetched route payloads warm longer for instant back-and-forth navigation.
+    // Disable client-side prefetch reuse: Airtable signed image URLs expire after
+    // ~2h, so any cached HTML can ship dead URLs that paint as broken images on
+    // navigation. Re-fetching on every Link click keeps URLs always fresh; cost
+    // is ~50–200 ms per navigation vs the previous "instant" feel.
     staleTimes: {
-      dynamic: 900,
-      static: 900,
+      dynamic: 0,
+      static: 0,
     },
   },
   async rewrites() {
