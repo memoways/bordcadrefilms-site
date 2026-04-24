@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -22,6 +23,7 @@ import AdminField from "../../components/AdminField";
 import AdminToast from "../../components/AdminToast";
 import SocialIcon from "../../../components/SocialIcon";
 import type { SocialPlatform } from "../../../lib/social";
+import { normalizePlatform } from "../../../lib/social";
 import { adminPatch, adminPost, adminDelete, adminRevalidate } from "../../lib/api";
 
 const TABLE = "SocialMedia";
@@ -73,7 +75,10 @@ function SortableRow({
     useSortable({ id: item.id });
 
   const [draft, setDraft] = useState<SocialRow>(item);
-  const displayLabel = item.label || platformLabel(item.platform);
+  const currentPlatform = expanded ? draft.platform : item.platform;
+  const displayLabel = expanded
+    ? draft.label || platformLabel(draft.platform)
+    : item.label || platformLabel(item.platform);
 
   return (
     <div
@@ -92,7 +97,7 @@ function SortableRow({
         </button>
 
         <div className="w-8 h-8 shrink-0 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600">
-          <SocialIcon platform={(item.platform as SocialPlatform) || "other"} size={20} />
+          <SocialIcon platform={(currentPlatform as SocialPlatform) || "other"} size={20} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -163,6 +168,16 @@ function SortableRow({
             onChange={(v) => setDraft((d) => ({ ...d, url: v }))}
             placeholder="https://instagram.com/bordcadrefilms"
           />
+          <label className="flex items-center gap-2 text-sm text-zinc-700">
+            <input
+              type="checkbox"
+              checked={draft.publish}
+              onChange={(e) => setDraft((d) => ({ ...d, publish: e.target.checked }))}
+              className="w-4 h-4 accent-zinc-900"
+            />
+            Publish this link
+          </label>
+          <p className="text-xs text-zinc-500">Only published links appear in the footer.</p>
           <div className="flex justify-end">
             <button
               onClick={() => onSave(draft)}
@@ -178,7 +193,19 @@ function SortableRow({
   );
 }
 
+function mapAirtableRecords(records: Array<{ id: string; fields: Record<string, unknown> }> = []): SocialRow[] {
+  return records.map((r, i) => ({
+    id: r.id,
+    label: String(r.fields.label ?? ""),
+    platform: normalizePlatform(r.fields.platform),
+    url: String(r.fields.url ?? ""),
+    order: typeof r.fields.order === "number" ? r.fields.order : i + 1,
+    publish: Boolean(r.fields.publish),
+  }));
+}
+
 export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
+  const pathname = usePathname();
   const [items, setItems] = useState<SocialRow[]>(initialItems);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -186,6 +213,30 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const dismiss = useCallback(() => setToast(null), []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSocial() {
+      try {
+        const res = await fetch(
+          `/api/admin/records/${encodeURIComponent(TABLE)}?sort[0][field]=order&sort[0][direction]=asc`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!active) return;
+        setItems(mapAirtableRecords(data.records));
+      } catch {
+        // ignore refresh failures
+      }
+    }
+
+    loadSocial();
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -224,14 +275,19 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
     try {
       await adminPatch(TABLE, row.id, {
         label: row.label,
-        platform: row.platform,
+        platform: normalizePlatform(row.platform),
         url: row.url,
         order: row.order,
         publish: row.publish,
       });
       await adminRevalidate("social-media");
       setItems((prev) => prev.map((m) => (m.id === row.id ? row : m)));
-      setToast({ msg: "Link saved", type: "success" });
+      setToast({
+        msg: row.publish
+          ? "Link saved"
+          : "Link saved, but it is hidden until Publish is toggled on",
+        type: "success",
+      });
     } catch {
       setToast({ msg: "Failed to save", type: "error" });
     } finally {
@@ -307,7 +363,7 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
         <div>
           <h1 className="text-xl font-semibold text-zinc-900">Social media</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            These links appear in the footer of every page. Drag to reorder, toggle visibility per row, and click Publish to push changes live.
+            These links appear in the footer of every page. Drag to reorder, toggle visibility per row, and only published links appear live.
           </p>
         </div>
         <button

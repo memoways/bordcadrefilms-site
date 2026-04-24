@@ -1,4 +1,5 @@
 import { SocialClient, type SocialRow } from "./SocialClient";
+import { normalizePlatform } from "../../../lib/social";
 
 const TABLE = process.env.AIRTABLE_SOCIAL_TABLE ?? "SocialMedia";
 
@@ -25,7 +26,7 @@ async function getSocialData(): Promise<SocialRow[]> {
   return (data.records ?? []).map((r, i) => ({
     id: r.id,
     label: String(r.fields.label ?? ""),
-    platform: String(r.fields.platform ?? "other"),
+    platform: normalizePlatform(r.fields.platform),
     url: String(r.fields.url ?? ""),
     order: typeof r.fields.order === "number" ? r.fields.order : i + 1,
     publish: Boolean(r.fields.publish),
