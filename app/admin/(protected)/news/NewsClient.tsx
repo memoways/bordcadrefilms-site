@@ -1,28 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import AdminField from "../../components/AdminField";
 import AdminToast from "../../components/AdminToast";
 import { adminPatch, adminPost, adminDelete, adminRevalidate } from "../../lib/api";
-
-const TABLE = "News";
 
 const STATUS_OPTIONS = [
   "Currently shooting",
@@ -71,27 +52,11 @@ function SortableRow({
   saving: boolean;
   deleting: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: item.id });
-
   const [draft, setDraft] = useState<NewsRow>(item);
 
   return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`bg-white border border-zinc-200 rounded-xl overflow-hidden transition-shadow ${isDragging ? "shadow-2xl opacity-80 z-50" : ""}`}
-    >
+    <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-3">
-        <button
-          {...attributes}
-          {...listeners}
-          className="text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing touch-none"
-          aria-label="Drag to reorder"
-        >
-          ⠿
-        </button>
-
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-zinc-900 truncate">{item.title || "Untitled"}</p>
           <p className="text-xs text-zinc-400 truncate">
@@ -100,12 +65,14 @@ function SortableRow({
         </div>
 
         <button
+          type="button"
           onClick={onExpand}
           className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:border-zinc-400 transition-colors"
         >
           {expanded ? "Close" : "Edit"}
         </button>
         <button
+          type="button"
           onClick={() => onDelete(item.id)}
           disabled={deleting}
           className="text-xs px-2 py-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
@@ -202,6 +169,7 @@ function SortableRow({
           />
           <div className="flex justify-end">
             <button
+              type="button"
               onClick={() => onSave(draft)}
               disabled={saving}
               className="px-4 py-1.5 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
@@ -215,7 +183,7 @@ function SortableRow({
   );
 }
 
-export function NewsClient({ initialItems }: { initialItems: NewsRow[] }) {
+export function NewsClient({ initialItems, table }: { initialItems: NewsRow[]; table: string }) {
   const [items, setItems] = useState<NewsRow[]>(initialItems);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -224,36 +192,8 @@ export function NewsClient({ initialItems }: { initialItems: NewsRow[] }) {
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const dismiss = useCallback(() => setToast(null), []);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
-  async function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIdx = items.findIndex((m) => m.id === active.id);
-    const newIdx = items.findIndex((m) => m.id === over.id);
-    const reordered = arrayMove(items, oldIdx, newIdx).map((m, i) => ({
-      ...m,
-      order: i + 1,
-    }));
-    setItems(reordered);
-
-    try {
-      await Promise.all(
-        reordered.map((m) => adminPatch(TABLE, m.id, { order: m.order })),
-      );
-      await adminRevalidate("news");
-      setToast({ msg: "Order saved", type: "success" });
-    } catch {
-      setToast({ msg: "Failed to save order", type: "error" });
-    }
-  }
-
   function buildFields(row: NewsRow) {
-    return {
+    const fields: Record<string, unknown> = {
       slug: row.slug || slugify(row.title),
       title: row.title,
       director: row.director,
@@ -265,6 +205,12 @@ export function NewsClient({ initialItems }: { initialItems: NewsRow[] }) {
       link: row.link,
       order: row.order,
     };
+
+    if (row.imageUrl) {
+      fields.image = [{ url: row.imageUrl }];
+    }
+
+    return fields;
   }
 
   async function saveItem(row: NewsRow) {
@@ -274,12 +220,13 @@ export function NewsClient({ initialItems }: { initialItems: NewsRow[] }) {
     }
     setSaving(row.id);
     try {
-      await adminPatch(TABLE, row.id, buildFields(row));
+      await adminPatch(table, row.id, buildFields(row));
       await adminRevalidate("news");
       setItems((prev) => prev.map((m) => (m.id === row.id ? row : m)));
       setToast({ msg: "News saved", type: "success" });
-    } catch {
-      setToast({ msg: "Failed to save", type: "error" });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      setToast({ msg: `Failed to save: ${msg}`, type: "error" });
     } finally {
       setSaving(null);
     }
@@ -289,13 +236,14 @@ export function NewsClient({ initialItems }: { initialItems: NewsRow[] }) {
     if (!confirm("Delete this news item? This cannot be undone.")) return;
     setDeleting(id);
     try {
-      await adminDelete(TABLE, id);
+      await adminDelete(table, id);
       await adminRevalidate("news");
       setItems((prev) => prev.filter((m) => m.id !== id));
       if (expanded === id) setExpanded(null);
       setToast({ msg: "News deleted", type: "success" });
-    } catch {
-      setToast({ msg: "Failed to delete", type: "error" });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      setToast({ msg: `Failed to delete: ${msg}`, type: "error" });
     } finally {
       setDeleting(null);
     }
@@ -306,31 +254,38 @@ export function NewsClient({ initialItems }: { initialItems: NewsRow[] }) {
     try {
       const newOrder = items.length + 1;
       const title = "New update";
-      const result = (await adminPost(TABLE, {
+      const slug = `new-update-${Date.now()}`;
+      const placeholderImage = "https://placehold.co/1200x800?text=News+image";
+      const result = (await adminPost(table, {
         title,
-        slug: `new-update-${Date.now()}`,
+        slug,
         status: "Currently shooting",
         order: newOrder,
+        excerpt: "Draft news item — update this text.",
+        publishedAt: new Date().toISOString().slice(0, 10),
+        image: [{ url: placeholderImage }],
       })) as { id: string };
       const newRow: NewsRow = {
         id: result.id,
-        slug: `new-update-${Date.now()}`,
+        slug,
         title,
         director: "",
-        excerpt: "",
+        excerpt: "Draft news item — update this text.",
         content: "",
         status: "Currently shooting",
         location: "",
-        publishedAt: "",
+        publishedAt: new Date().toISOString().slice(0, 10),
         link: "",
-        imageUrl: "",
+        imageUrl: placeholderImage,
         order: newOrder,
       };
       setItems((prev) => [...prev, newRow]);
+      await adminRevalidate("news");
       setExpanded(result.id);
       setToast({ msg: "Draft created — fill in the details", type: "success" });
-    } catch {
-      setToast({ msg: "Failed to add news item", type: "error" });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      setToast({ msg: `Failed to add news item: ${msg}`, type: "error" });
     } finally {
       setAdding(false);
     }
@@ -346,6 +301,7 @@ export function NewsClient({ initialItems }: { initialItems: NewsRow[] }) {
           </p>
         </div>
         <button
+          type="button"
           onClick={addItem}
           disabled={adding}
           className="shrink-0 px-4 py-2 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
@@ -360,24 +316,20 @@ export function NewsClient({ initialItems }: { initialItems: NewsRow[] }) {
         </div>
       )}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={items.map((m) => m.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">
-            {items.map((m) => (
-              <SortableRow
-                key={m.id}
-                item={m}
-                expanded={expanded === m.id}
-                onExpand={() => setExpanded((e) => (e === m.id ? null : m.id))}
-                onSave={saveItem}
-                onDelete={deleteItem}
-                saving={saving === m.id}
-                deleting={deleting === m.id}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      <div className="space-y-2">
+        {items.map((m) => (
+          <SortableRow
+            key={m.id}
+            item={m}
+            expanded={expanded === m.id}
+            onExpand={() => setExpanded((e) => (e === m.id ? null : m.id))}
+            onSave={saveItem}
+            onDelete={deleteItem}
+            saving={saving === m.id}
+            deleting={deleting === m.id}
+          />
+        ))}
+      </div>
 
       <AdminToast message={toast?.msg ?? null} type={toast?.type} onDismiss={dismiss} />
     </div>

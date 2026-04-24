@@ -1,4 +1,5 @@
-import { NewsClient, type NewsRow } from "./NewsClient";
+import NewsClientLoader from "./NewsClientLoader";
+import type { NewsRow } from "./NewsClient";
 
 const TABLE = process.env.AIRTABLE_NEWS_TABLE ?? "News";
 
@@ -52,5 +53,5 @@ export const revalidate = 0;
 
 export default async function AdminNewsPage() {
   const items = await getNewsData();
-  return <NewsClient initialItems={items} />;
+  return <NewsClientLoader initialItems={items} table={TABLE} />;
 }
