@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getFilms } from "../../lib/catalog";
 import { readTeam } from "../../lib/about";
 import { getNews } from "../../lib/news";
+import PublishButton from "./PublishButton";
 
 export const revalidate = 0; // Always fresh in admin
 
@@ -132,31 +133,5 @@ export default async function AdminDashboard() {
         </div>
       </div>
     </div>
-  );
-}
-
-function PublishButton({
-  tag,
-  label,
-  path,
-}: {
-  tag: string;
-  label: string;
-  path: string;
-}) {
-  return (
-    <form action={`/api/admin/revalidate`} method="POST">
-      <input type="hidden" name="tag" value={tag} />
-      <button
-        type="submit"
-        className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 transition-colors text-left"
-      >
-        <div>
-          <span className="text-sm font-medium text-zinc-800">{label}</span>
-          <span className="text-xs text-zinc-400 ml-2">{path}</span>
-        </div>
-        <span className="text-xs text-zinc-500">Publish →</span>
-      </button>
-    </form>
   );
 }
