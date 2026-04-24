@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Navigation', () => {
   test('header is visible on all main routes', async ({ page }) => {
-    const routes = ['/', '/completed-films', '/directors', '/news', '/about', '/contact'];
+    const routes = ['/', '/completed-films', '/directors', '/news', '/about'];
 
     for (const route of routes) {
       await page.goto(route);

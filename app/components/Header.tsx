@@ -12,7 +12,6 @@ const NAV_LINKS: NavLink[] = [
   { href: "/completed-films", label: "Films", prefetch: true },
   { href: "/directors", label: "Directors", prefetch: true },
   { href: "/about", label: "About", prefetch: true },
-  { href: "/contact", label: "Contact" },
 ];
 
 export default function Header() {

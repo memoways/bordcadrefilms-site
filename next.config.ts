@@ -15,6 +15,16 @@ const nextConfig: NextConfig = {
       static: 900,
     },
   },
+  async rewrites() {
+    return [
+      {
+        // SimpleCommenter widget issues same-origin requests to /api/js/*;
+        // proxy them to simplecommenter.com so it works on any deployment domain.
+        source: "/api/js/:path*",
+        destination: "https://simplecommenter.com/api/js/:path*",
+      },
+    ];
+  },
   async headers() {
     return [
       {

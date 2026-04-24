@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import Script from "next/script";
 import Header from "./components/Header";
 import NewsletterModule from "./components/NewsletterModule";
 import Footer from "./components/Footer";
@@ -49,9 +50,16 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-white text-black">
         <Header />
-        <main className="flex-1 flex flex-col">{children}</main>
+        <main className="flex-1 flex flex-col">
+          {children}
+          <div id="sc_a767ccc839044066" />
+        </main>
         <NewsletterModule />
         <Footer />
+        <Script
+          src="https://simplecommenter.com/js/comments.min.js?id=sc_a767ccc839044066"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );
