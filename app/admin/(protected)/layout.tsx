@@ -1,7 +1,7 @@
-import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import AdminSidebar from "../components/AdminSidebar";
+import UserButtonClient from "./UserButtonClient";
 
 export const metadata = {
   title: "Admin — Bord Cadre Films",
@@ -37,13 +37,7 @@ export default async function AdminLayout({
             >
               View site ↗
             </a>
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-8 h-8",
-                },
-              }}
-            />
+            <UserButtonClient />
           </div>
         </header>
 
