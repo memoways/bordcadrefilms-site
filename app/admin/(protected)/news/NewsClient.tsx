@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import AdminField from "../../components/AdminField";
 import AdminToast from "../../components/AdminToast";
 import { adminPatch, adminPost, adminDelete, adminRevalidate } from "../../lib/api";
+import { slugify } from "../../../lib/utils";
 
 const STATUS_OPTIONS = [
   "Currently shooting",
@@ -25,15 +26,6 @@ export type NewsRow = {
   imageUrl: string;
   order: number;
 };
-
-function slugify(str: string): string {
-  return str
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 function SortableRow({
   item,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SocialIcon from "./SocialIcon";
-import SocialLinksClient from "./SocialLinksClient";
+import { getSocialLinks } from "../lib/social";
+import { safeExternalUrl } from "../lib/utils";
 
 const NAV_LINKS = [
   { label: "Films", href: "/completed-films" },
@@ -13,7 +14,12 @@ const SUPPORT_LINKS = [
   { label: "Legal notice", href: "/legal" },
 ];
 
-export default function Footer() {
+export default async function Footer() {
+  const socialLinks = (await getSocialLinks()).flatMap((link) => {
+    const safe = safeExternalUrl(link.url);
+    return safe ? [{ ...link, url: safe }] : [];
+  });
+
   return (
     <footer
       className="text-white py-16"
@@ -95,7 +101,28 @@ export default function Footer() {
               ))}
             </ul>
 
-            <SocialLinksClient />
+            {socialLinks.length > 0 && (
+              <>
+                <p className="font-bold text-sm uppercase tracking-widest mb-4">
+                  Follow us
+                </p>
+                <ul className="flex items-center gap-4">
+                  {socialLinks.map(({ id, label, platform, url }) => (
+                    <li key={id}>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={label || platform}
+                        className="block p-2 -m-2 text-white/50 hover:text-white transition-colors"
+                      >
+                        <SocialIcon platform={platform} />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
 
         </div>

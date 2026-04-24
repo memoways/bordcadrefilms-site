@@ -24,7 +24,7 @@ function StatCard({ label, value, sub, href, accent }: StatCardProps) {
           : "bg-white border-zinc-200 hover:border-zinc-300"
       }`}
     >
-      <span className={`text-xs uppercase tracking-widest font-medium ${accent ? "text-zinc-400" : "text-zinc-400"}`}>
+      <span className="text-xs uppercase tracking-widest font-medium text-zinc-400">
         {label}
       </span>
       <span className={`text-3xl font-bold tabular-nums leading-none ${accent ? "text-white" : "text-zinc-900"}`}>

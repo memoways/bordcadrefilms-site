@@ -1,5 +1,6 @@
 import NewsClientLoader from "./NewsClientLoader";
 import type { NewsRow } from "./NewsClient";
+import { firstString, getValidImageUrl } from "../../../lib/utils";
 
 const TABLE = process.env.AIRTABLE_NEWS_TABLE ?? "News";
 
@@ -23,30 +24,20 @@ async function getNewsData(): Promise<NewsRow[]> {
     records?: Array<{ id: string; fields: Record<string, unknown> }>;
   };
 
-  return (data.records ?? []).map((r, i) => {
-    const img = r.fields.image;
-    let imageUrl = "";
-    if (Array.isArray(img) && img.length > 0) {
-      const first = img[0] as { url?: string };
-      imageUrl = first?.url ?? "";
-    } else if (typeof img === "string") {
-      imageUrl = img;
-    }
-    return {
-      id: r.id,
-      slug: String(r.fields.slug ?? ""),
-      title: String(r.fields.title ?? ""),
-      director: String(r.fields.director ?? ""),
-      excerpt: String(r.fields.excerpt ?? ""),
-      content: String(r.fields.content ?? ""),
-      status: String(r.fields.status ?? "Currently shooting"),
-      location: String(r.fields.location ?? ""),
-      publishedAt: String(r.fields.publishedAt ?? ""),
-      link: String(r.fields.link ?? ""),
-      imageUrl,
-      order: typeof r.fields.order === "number" ? r.fields.order : i + 1,
-    };
-  });
+  return (data.records ?? []).map((r, i) => ({
+    id: r.id,
+    slug: firstString(r.fields.slug) ?? "",
+    title: firstString(r.fields.title) ?? "",
+    director: firstString(r.fields.director) ?? "",
+    excerpt: firstString(r.fields.excerpt) ?? "",
+    content: firstString(r.fields.content) ?? "",
+    status: firstString(r.fields.status) ?? "Currently shooting",
+    location: firstString(r.fields.location) ?? "",
+    publishedAt: firstString(r.fields.publishedAt) ?? "",
+    link: firstString(r.fields.link) ?? "",
+    imageUrl: getValidImageUrl(r.fields.image) ?? "",
+    order: typeof r.fields.order === "number" ? r.fields.order : i + 1,
+  }));
 }
 
 export const revalidate = 0;

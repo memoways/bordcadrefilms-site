@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useCallback, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -22,11 +21,11 @@ import { CSS } from "@dnd-kit/utilities";
 import AdminField from "../../components/AdminField";
 import AdminToast from "../../components/AdminToast";
 import SocialIcon from "../../../components/SocialIcon";
-import type { SocialPlatform } from "../../../lib/social";
-import { normalizePlatform } from "../../../lib/social";
+import type { SocialLink, SocialPlatform } from "../../../lib/social";
+import { normalizePlatform, SOCIAL_TABLE } from "../../../lib/social";
 import { adminPatch, adminPost, adminDelete, adminRevalidate } from "../../lib/api";
 
-const TABLE = "SocialMedia";
+type SocialRow = SocialLink;
 
 const PLATFORM_OPTIONS: { value: SocialPlatform; label: string }[] = [
   { value: "youtube", label: "YouTube" },
@@ -39,18 +38,9 @@ const PLATFORM_OPTIONS: { value: SocialPlatform; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-function platformLabel(p: string): string {
+function platformLabel(p: SocialPlatform): string {
   return PLATFORM_OPTIONS.find((o) => o.value === p)?.label ?? p;
 }
-
-export type SocialRow = {
-  id: string;
-  label: string;
-  platform: string;
-  url: string;
-  order: number;
-  publish: boolean;
-};
 
 function SortableRow({
   item,
@@ -75,7 +65,7 @@ function SortableRow({
     useSortable({ id: item.id });
 
   const [draft, setDraft] = useState<SocialRow>(item);
-  const currentPlatform = expanded ? draft.platform : item.platform;
+  const currentPlatform: SocialPlatform = expanded ? draft.platform : item.platform;
   const displayLabel = expanded
     ? draft.label || platformLabel(draft.platform)
     : item.label || platformLabel(item.platform);
@@ -97,7 +87,7 @@ function SortableRow({
         </button>
 
         <div className="w-8 h-8 shrink-0 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600">
-          <SocialIcon platform={(currentPlatform as SocialPlatform) || "other"} size={20} />
+          <SocialIcon platform={currentPlatform} size={20} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -139,13 +129,14 @@ function SortableRow({
               </label>
               <select
                 value={draft.platform}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const next = normalizePlatform(e.target.value);
                   setDraft((d) => ({
                     ...d,
-                    platform: e.target.value,
-                    label: d.label || platformLabel(e.target.value),
-                  }))
-                }
+                    platform: next,
+                    label: d.label || platformLabel(next),
+                  }));
+                }}
                 className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
               >
                 {PLATFORM_OPTIONS.map((o) => (
@@ -193,19 +184,7 @@ function SortableRow({
   );
 }
 
-function mapAirtableRecords(records: Array<{ id: string; fields: Record<string, unknown> }> = []): SocialRow[] {
-  return records.map((r, i) => ({
-    id: r.id,
-    label: String(r.fields.label ?? ""),
-    platform: normalizePlatform(r.fields.platform),
-    url: String(r.fields.url ?? ""),
-    order: typeof r.fields.order === "number" ? r.fields.order : i + 1,
-    publish: Boolean(r.fields.publish),
-  }));
-}
-
 export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
-  const pathname = usePathname();
   const [items, setItems] = useState<SocialRow[]>(initialItems);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -213,30 +192,6 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const dismiss = useCallback(() => setToast(null), []);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadSocial() {
-      try {
-        const res = await fetch(
-          `/api/admin/records/${encodeURIComponent(TABLE)}?sort[0][field]=order&sort[0][direction]=asc`,
-          { cache: "no-store" },
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!active) return;
-        setItems(mapAirtableRecords(data.records));
-      } catch {
-        // ignore refresh failures
-      }
-    }
-
-    loadSocial();
-    return () => {
-      active = false;
-    };
-  }, [pathname]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -257,7 +212,7 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
 
     try {
       await Promise.all(
-        reordered.map((m) => adminPatch(TABLE, m.id, { order: m.order })),
+        reordered.map((m) => adminPatch(SOCIAL_TABLE, m.id, { order: m.order })),
       );
       await adminRevalidate("social-media");
       setToast({ msg: "Order saved", type: "success" });
@@ -273,9 +228,9 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
     }
     setSaving(row.id);
     try {
-      await adminPatch(TABLE, row.id, {
+      await adminPatch(SOCIAL_TABLE, row.id, {
         label: row.label,
-        platform: normalizePlatform(row.platform),
+        platform: row.platform,
         url: row.url,
         order: row.order,
         publish: row.publish,
@@ -299,7 +254,7 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
     const next = { ...row, publish: !row.publish };
     setItems((prev) => prev.map((m) => (m.id === row.id ? next : m)));
     try {
-      await adminPatch(TABLE, row.id, { publish: next.publish });
+      await adminPatch(SOCIAL_TABLE, row.id, { publish: next.publish });
       await adminRevalidate("social-media");
       setToast({
         msg: next.publish ? "Link is now visible" : "Link hidden",
@@ -316,7 +271,7 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
     if (!confirm("Delete this social link?")) return;
     setDeleting(id);
     try {
-      await adminDelete(TABLE, id);
+      await adminDelete(SOCIAL_TABLE, id);
       await adminRevalidate("social-media");
       setItems((prev) => prev.filter((m) => m.id !== id));
       if (expanded === id) setExpanded(null);
@@ -332,7 +287,7 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
     setAdding(true);
     try {
       const newOrder = items.length + 1;
-      const result = (await adminPost(TABLE, {
+      const result = (await adminPost(SOCIAL_TABLE, {
         label: "Instagram",
         platform: "instagram",
         url: "",
