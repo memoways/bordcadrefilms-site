@@ -34,10 +34,10 @@ const PLATFORMS: readonly SocialPlatform[] = [
   "other",
 ];
 
-function normalisePlatform(val: unknown): SocialPlatform {
-  const s = firstString(val)?.toLowerCase();
-  return (PLATFORMS as readonly string[]).includes(s ?? "")
-    ? (s as SocialPlatform)
+export function normalizePlatform(value: unknown): SocialPlatform {
+  const normalized = firstString(value)?.trim().toLowerCase() ?? "";
+  return (PLATFORMS as readonly string[]).includes(normalized)
+    ? (normalized as SocialPlatform)
     : "other";
 }
 
@@ -65,7 +65,7 @@ export const getSocialLinks = cache(async (): Promise<SocialLink[]> => {
       .map((r, i): SocialLink => ({
         id: r.id,
         label: firstString(r.fields.label) ?? "",
-        platform: normalisePlatform(r.fields.platform),
+        platform: normalizePlatform(r.fields.platform),
         url: firstString(r.fields.url) ?? "",
         order: typeof r.fields.order === "number" ? r.fields.order : i + 1,
         publish: Boolean(r.fields.publish),
