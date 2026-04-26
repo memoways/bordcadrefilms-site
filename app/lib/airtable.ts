@@ -124,15 +124,19 @@ export async function fetchAirtableRecords(
 // data cache on the filesystem. This bypasses the 2 MB fetch-cache limit that
 // applies to raw HTTP responses. Revalidates every 15 min, or on-demand via
 // the 'films' tag (hit /api/revalidate?tag=films).
+//
+// We deliberately let fetch errors AND empty-result cases propagate as throws
+// here — unstable_cache does not cache thrown errors, so a transient Airtable
+// 429/5xx or a momentarily-empty view will retry on the next request instead
+// of poisoning the cache with `[]` for up to 15 minutes.
 const _readAirtableFilms = unstable_cache(
   async function (): Promise<Film[]> {
-    try {
-      const records = await fetchAirtableRecords(TABLE_NAME);
-      return _processFilmRecords(records);
-    } catch (err) {
-      console.error('[Airtable] Fetch error, returning empty film list:', err);
-      return [];
+    const records = await fetchAirtableRecords(TABLE_NAME);
+    const films = _processFilmRecords(records);
+    if (films.length === 0) {
+      throw new Error('[Airtable] Empty film list — skipping cache');
     }
+    return films;
   },
   ['airtable-films'],
   { revalidate: 900, tags: ['films'] },
@@ -140,7 +144,16 @@ const _readAirtableFilms = unstable_cache(
 
 // React cache deduplicates within a single render pass — e.g. generateMetadata
 // + the page body both call getFilms(), but unstable_cache is only hit once.
-export const readAirtableFilms = cache(_readAirtableFilms);
+// The try/catch here is the single point where transient failures degrade
+// gracefully to an empty array for the UI; the empty array is never cached.
+export const readAirtableFilms = cache(async (): Promise<Film[]> => {
+  try {
+    return await _readAirtableFilms();
+  } catch (err) {
+    console.error('[Airtable] Fetch error, returning empty film list:', err);
+    return [];
+  }
+});
 
 function _processFilmRecords(records: AirtableRecord[]): Film[] {
   const seen = new Set<string>();
