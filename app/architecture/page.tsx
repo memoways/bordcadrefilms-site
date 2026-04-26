@@ -254,7 +254,7 @@ export default function ArchitecturePage() {
                   <Arrow label="HTML + RSC" />
                   <StackBox
                     title="Next.js Image optimizer (/_next/image)"
-                    detail="Resizes + AVIF/WebP. Caches optimized blob 31 days (minimumCacheTTL)."
+                    detail="Resizes + AVIF/WebP. Caches optimized blob 1 h (minimumCacheTTL) — under Airtable URL expiry."
                     badge="CDN"
                   />
                   <Arrow label="<img>" />
@@ -313,10 +313,12 @@ export default function ArchitecturePage() {
                           <Code>minimumCacheTTL</Code>
                         </td>
                         <td className="py-4 pr-4">Vercel image CDN</td>
-                        <td className="py-4 pr-4 font-mono text-xs">31 days</td>
+                        <td className="py-4 pr-4 font-mono text-xs">1 h</td>
                         <td className="py-4">
-                          Optimized blobs (AVIF/WebP) live long even when their origin URL has died. Saves bandwidth
-                          and turns the optimizer into our de-facto CDN mirror.
+                          Aligned with Airtable&rsquo;s ~2 h URL expiry. A longer TTL means the optimizer&rsquo;s LRU
+                          can keep a blob whose origin URL is already dead — on eviction it refetches with the
+                          expired URL and returns 502. 1 h keeps refetches frequent enough to always hit a fresh URL
+                          (paired with <Code>unstable_cache</Code>&rsquo;s 15-min rotation upstream).
                         </td>
                       </tr>
                       <tr>
@@ -585,8 +587,13 @@ export default function ArchitecturePage() {
                       <tr>
                         <td className="py-4 pr-4 font-medium text-zinc-900">Optimizer cache evicted</td>
                         <td className="py-4 pr-4">CDN miss + dead origin</td>
-                        <td className="py-4 pr-4">SmartImage retries</td>
-                        <td className="py-4">Same — escalation if optimizer also fails.</td>
+                        <td className="py-4 pr-4">
+                          <Code>minimumCacheTTL</Code> 1 h
+                        </td>
+                        <td className="py-4">
+                          With TTL &lt; URL expiry, refetch always uses a fresh URL (rotated by{" "}
+                          <Code>unstable_cache</Code>). SmartImage retries remain a safety net.
+                        </td>
                       </tr>
                       <tr>
                         <td className="py-4 pr-4 font-medium text-zinc-900">Admin updates a film</td>
@@ -626,7 +633,7 @@ export default function ArchitecturePage() {
                 <Metric label="Single optimized poster" value="~80" unit="KB AVIF" tone="good" />
                 <Metric label="Refresh cooldown" value="30" unit="s" />
                 <Metric label="Idle threshold" value="90" unit="min" />
-                <Metric label="Image cache TTL" value="31" unit="d" tone="good" />
+                <Metric label="Image cache TTL" value="1" unit="h" />
                 <Metric label="ISR revalidate" value="15" unit="min" />
                 <Metric label="Retries before escalation" value="3" tone="warn" />
               </div>

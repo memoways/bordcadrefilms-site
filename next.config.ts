@@ -41,7 +41,12 @@ const nextConfig: NextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 2678400, // 31 days — Airtable images are stable once uploaded
+    // Airtable signed URLs expire ~2h. A long TTL here means the optimizer's LRU
+    // can hold a cached blob whose origin URL is already dead — on cache miss it
+    // refetches with the expired URL → 502 → random images break on detail pages
+    // until F5. 1h keeps refetches frequent enough that the URL is still alive
+    // (since unstable_cache rotates Films every 15 min, fresh URLs are available).
+    minimumCacheTTL: 3600,
     remotePatterns: [
       {
         protocol: "https",
