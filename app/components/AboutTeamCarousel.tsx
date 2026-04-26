@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Image from "next/image";
+import SmartImage from "./SmartImage";
 import type { TeamMemberData } from "../lib/about";
 
 // ── TeamCard ──────────────────────────────────────────────────────────────────
@@ -12,12 +12,13 @@ function TeamCard({ member }: { member: TeamMemberData }) {
       {/* Circular avatar */}
       <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-100">
         {member.image ? (
-          <Image
+          <SmartImage
             src={member.image}
             alt={member.name}
             fill
             className="object-cover"
             sizes="112px"
+            skeletonClassName="bg-zinc-100"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

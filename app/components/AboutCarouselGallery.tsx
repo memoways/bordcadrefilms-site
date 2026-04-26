@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import SmartImage from "./SmartImage";
 import type { FestivalPhotoData } from "../lib/about";
 
 type Props = {
@@ -26,12 +26,13 @@ export default function AboutCarouselGallery({ photos }: Props) {
               key={photo.id}
               className="relative aspect-video rounded-xl overflow-hidden bg-zinc-800"
             >
-              <Image
+              <SmartImage
                 src={photo.image}
                 alt={photo.title}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 33vw"
+                skeletonClassName="bg-zinc-800"
               />
             </div>
           ))}

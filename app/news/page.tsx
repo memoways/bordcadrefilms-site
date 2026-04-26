@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import SmartImage from "../components/SmartImage";
 import { getNews } from "../lib/news";
 
 export const metadata: Metadata = {
@@ -49,12 +49,13 @@ async function NewsContent() {
         >
           <Link href={`/news/${item.slug}`} prefetch className="relative block h-52 bg-zinc-100">
             {item.image ? (
-              <Image
+              <SmartImage
                 src={item.image}
                 alt={item.title}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                skeletonClassName="bg-zinc-100"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-zinc-100">

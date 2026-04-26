@@ -16,20 +16,25 @@ export default function SmartImage({
   skeletonClassName,
   ...rest
 }: SmartImageProps) {
+  const [trackedSrc, setTrackedSrc] = useState(src);
   const [loaded, setLoaded] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const escalatedRef = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
+  if (trackedSrc !== src) {
+    setTrackedSrc(src);
     setLoaded(false);
     setAttempt(0);
+  }
+
+  useEffect(() => {
     escalatedRef.current = false;
     if (timer.current) {
       clearTimeout(timer.current);
       timer.current = null;
     }
-  }, [src]);
+  }, [trackedSrc]);
 
   useEffect(() => {
     return () => {

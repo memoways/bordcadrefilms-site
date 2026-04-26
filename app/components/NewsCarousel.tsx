@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import SmartImage from "./SmartImage";
 import type { NewsItem } from "../lib/news";
 
 type NewsCarouselProps = {
@@ -109,13 +109,14 @@ export default function NewsCarousel({ items, autoPlayMs = 6500 }: NewsCarouselP
                   <Link href={`/news/${item.slug}`} prefetch className="block focus:outline-none focus:ring-2 focus:ring-white rounded-2xl">
                     <div className="relative w-full h-48 md:h-72 rounded-2xl overflow-hidden bg-zinc-100">
                       {item.image ? (
-                        <Image
+                        <SmartImage
                           src={item.image}
                           alt={item.title}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 100vw, 50vw"
                           priority={index === 0}
+                          skeletonClassName="bg-zinc-100"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center bg-zinc-100">

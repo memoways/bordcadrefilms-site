@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import SmartImage from "../../components/SmartImage";
 import { getNewsBySlug, getNews } from "../../lib/news";
 
 export async function generateStaticParams() {
@@ -65,13 +65,14 @@ export default async function NewsDetailPage({
 
         <div className="relative w-full h-80 md:h-full min-h-85 rounded-2xl overflow-hidden bg-zinc-100">
           {article.image ? (
-            <Image
+            <SmartImage
               src={article.image}
               alt={article.title}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 45vw"
               priority
+              skeletonClassName="bg-zinc-100"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-zinc-100">

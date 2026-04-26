@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { type Director } from "../lib/catalog";
 import { getValidImageUrl } from "../lib/utils";
+import SmartImage from "./SmartImage";
 
 export default function DirectorCard({ director, priority = false }: { director: Director; priority?: boolean }) {
   const imgUrl = getValidImageUrl(director.profilePicture);
@@ -13,13 +13,14 @@ export default function DirectorCard({ director, priority = false }: { director:
     >
       <div className="relative w-4/5 max-w-[144px] aspect-[4/5] overflow-hidden rounded-full border border-zinc-200">
         {imgUrl ? (
-          <Image
+          <SmartImage
             src={imgUrl}
             alt={director.name}
             fill
             className="object-cover"
             sizes="(max-width: 640px) 30vw, 144px"
             priority={priority}
+            skeletonClassName="bg-zinc-100"
           />
         ) : (
           <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-400 text-xs">

@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import SmartImage from "../../components/SmartImage";
 import { getFilms } from "../../lib/catalog";
 import { getValidImageUrl, slugify } from "../../lib/utils";
 
@@ -105,16 +105,16 @@ export default async function DirectorDetailPage({
 			<section className="bg-[#1C1C1C] text-white">
 				<div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:px-8 lg:py-12">
 					<div className="grid items-center gap-8 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
-						<div className="mx-auto h-40 w-40 overflow-hidden rounded-full border border-white/85 bg-zinc-800 sm:h-44 sm:w-44 lg:mx-0">
+						<div className="relative mx-auto h-40 w-40 overflow-hidden rounded-full border border-white/85 bg-zinc-800 sm:h-44 sm:w-44 lg:mx-0">
 							{director.profilePicture ? (
-								<Image
+								<SmartImage
 									src={director.profilePicture}
 									alt={director.name}
-									width={176}
-									height={176}
-									className="h-full w-full object-cover"
+									fill
+									className="object-cover"
 									sizes="(max-width: 1023px) 176px, 220px"
 									priority
+									skeletonClassName="bg-zinc-800"
 								/>
 							) : (
 								<div className="flex h-full w-full items-center justify-center text-sm text-zinc-300">
@@ -166,12 +166,13 @@ export default async function DirectorDetailPage({
 								>
 									<div className="relative aspect-[16/9] overflow-hidden rounded-lg border border-zinc-300 bg-zinc-900">
 										{entry.poster ? (
-											<Image
+											<SmartImage
 												src={entry.poster}
 												alt={entry.title}
 												fill
 												className="object-cover"
 												sizes="(max-width: 639px) 100vw, 190px"
+												skeletonClassName="bg-zinc-900"
 											/>
 										) : (
 											<div className="flex h-full w-full items-center justify-center text-xs text-zinc-300">

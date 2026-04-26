@@ -9,12 +9,13 @@ const REFRESH_COOLDOWN_MS = 30_000;
 
 export default function LiveReload() {
   const router = useRouter();
-  const lastActiveRef = useRef<number>(Date.now());
+  const lastActiveRef = useRef<number>(0);
   const lastRefreshRef = useRef<number>(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    lastActiveRef.current = Date.now();
 
     const refreshImmediate = () => {
       lastRefreshRef.current = Date.now();

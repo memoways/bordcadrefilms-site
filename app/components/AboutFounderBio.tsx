@@ -1,4 +1,4 @@
-import Image from "next/image";
+import SmartImage from "./SmartImage";
 import type { FounderBioData } from "../lib/about";
 
 type Props = {
@@ -19,12 +19,13 @@ export default function AboutFounderBio({ founder }: Props) {
         <div className="shrink-0 mx-auto md:mx-0 w-48 md:w-56">
           <div className="relative w-full aspect-[3/4] overflow-hidden rounded-2xl bg-zinc-100 shadow-sm">
             {founder.image ? (
-              <Image
+              <SmartImage
                 src={founder.image}
                 alt={founder.name}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 192px, 224px"
+                skeletonClassName="bg-zinc-100"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-zinc-200">
