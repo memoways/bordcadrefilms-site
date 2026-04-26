@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getValidImageUrl, safeExternalUrl } from "../lib/utils";
 import { type Film } from "@/app/lib/airtable";
@@ -213,14 +212,17 @@ export default function FilmDetail({ film }: { film: Film }) {
                 </p>
                 {festivalLogoUrl && (
                   <div className="mb-5 flex justify-center">
-                    <Image
-                      src={festivalLogoUrl}
-                      alt="Festival logo"
-                      width={80}
-                      height={80}
-                      className="object-contain"
-                      style={{ filter: "brightness(0) invert(1)" }}
-                    />
+                    <div className="relative h-20 w-20">
+                      <SmartImage
+                        src={festivalLogoUrl}
+                        alt="Festival logo"
+                        fill
+                        sizes="80px"
+                        className="object-contain"
+                        style={{ filter: "brightness(0) invert(1)" }}
+                        skeletonClassName="bg-white/10 rounded-full"
+                      />
+                    </div>
                   </div>
                 )}
                 <div className="space-y-4 text-center text-sm leading-6 text-white/82 sm:space-y-5">
@@ -368,13 +370,14 @@ export default function FilmDetail({ film }: { film: Film }) {
               {/* Left col — avatar + name + filmography card */}
               <div className="flex w-full max-w-70 shrink-0 flex-col items-center gap-4">
                 {directorImageUrl && (
-                  <div className="h-36 w-36 overflow-hidden rounded-full border-2 border-white/60 bg-zinc-300 shadow-md">
-                    <Image
+                  <div className="relative h-36 w-36 overflow-hidden rounded-full border-2 border-white/60 bg-zinc-300 shadow-md">
+                    <SmartImage
                       src={directorImageUrl}
                       alt={directorName || "Director"}
-                      width={144}
-                      height={144}
-                      className="h-full w-full object-cover"
+                      fill
+                      sizes="144px"
+                      className="object-cover"
+                      skeletonClassName="bg-zinc-300"
                     />
                   </div>
                 )}

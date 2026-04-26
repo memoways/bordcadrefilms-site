@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import Image from "next/image";
+import SmartImage from "./SmartImage";
 
 interface GalleryImage {
   url: string;
@@ -106,13 +106,14 @@ export default function GalleryCarousel({ images, title }: { images: GalleryImag
                 }}
               >
                 {img.url ? (
-                  <Image
+                  <SmartImage
                     src={img.url}
                     alt={img.alt || `${title} — image ${imgIdx + 1}`}
                     fill
                     sizes={isBlurred ? "160px" : "300px"}
                     className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     draggable={false}
+                    skeletonClassName="bg-zinc-800"
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-zinc-800">
@@ -227,13 +228,14 @@ export default function GalleryCarousel({ images, title }: { images: GalleryImag
             onClick={(e) => e.stopPropagation()}
           >
             {current.url ? (
-              <Image
+              <SmartImage
                 src={current.url}
                 alt={current.alt}
                 fill
                 sizes="90vw"
                 className="object-contain"
                 priority
+                skeletonClassName="bg-zinc-900"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">

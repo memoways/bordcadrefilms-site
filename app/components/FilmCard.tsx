@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getValidImageUrl, slugify } from "../lib/utils";
 import type { Film } from "../lib/airtable";
+import SmartImage from "./SmartImage";
 
 export default function FilmCard({ film, priority = false }: { film: Film; priority?: boolean }) {
   const imgUrl = getValidImageUrl(film.poster);
@@ -16,7 +16,7 @@ export default function FilmCard({ film, priority = false }: { film: Film; prior
     >
       <div className="relative w-full aspect-2/3 bg-zinc-100">
         {imgUrl ? (
-          <Image
+          <SmartImage
             src={imgUrl}
             alt={altText}
             fill
@@ -24,6 +24,7 @@ export default function FilmCard({ film, priority = false }: { film: Film; prior
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 320px"
             priority={priority}
             style={{ objectFit: "contain", background: "#f4f4f5" }}
+            skeletonClassName="bg-zinc-100"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-zinc-500">No image</div>
