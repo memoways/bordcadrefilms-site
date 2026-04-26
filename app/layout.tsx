@@ -5,6 +5,7 @@ import Script from "next/script";
 import Header from "./components/Header";
 import NewsletterModule from "./components/NewsletterModule";
 import Footer from "./components/Footer";
+import LiveReload from "./components/LiveReload";
 import { getNews } from "./lib/news";
 
 const suisseIntl = localFont({
@@ -53,6 +54,7 @@ export default async function RootLayout({
       className={`${suisseIntl.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-black">
+        <LiveReload />
         <Header hasNews={hasNews} />
         <main className="flex-1 flex flex-col">
           {children}

@@ -55,4 +55,19 @@ export async function adminRevalidate(tag: string) {
     body: JSON.stringify({ tag }),
   });
   if (!res.ok) throw new Error(await res.text());
+
+  // Notify any open route (admin or public) to re-fetch server data without a
+  // manual page refresh. CustomEvent covers the current tab; BroadcastChannel
+  // covers other tabs on the same origin.
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("bcf:revalidate", { detail: { tag } }));
+  if ("BroadcastChannel" in window) {
+    try {
+      const ch = new BroadcastChannel("bcf:revalidate");
+      ch.postMessage({ tag, at: Date.now() });
+      ch.close();
+    } catch {
+      // best-effort; non-fatal
+    }
+  }
 }

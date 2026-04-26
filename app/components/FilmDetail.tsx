@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getValidImageUrl, safeExternalUrl } from "../lib/utils";
 import { type Film } from "@/app/lib/airtable";
 import GalleryCarousel from "./GalleryCarousel";
+import SmartImage from "./SmartImage";
 
 function splitList(value?: string): string[] {
   if (!value) return [];
@@ -157,13 +158,12 @@ export default function FilmDetail({ film }: { film: Film }) {
           <div className={`grid gap-8 lg:items-start lg:gap-6 xl:gap-8 ${heroLayoutClass}`}>
             {posterUrl && (
               <div className="relative z-20 mx-auto w-full max-w-70 sm:max-w-80 md:max-w-90 lg:mx-0 lg:max-w-72.5 lg:translate-y-20 xl:max-w-[320px] xl:translate-y-24 2xl:translate-y-28">
-                <div className="overflow-hidden rounded-[10px] border-2 border-[#F4F4F4] shadow-[10px_10px_10px_#8E8E8E33]">
-                  <Image
+                <div className="relative aspect-2/3 overflow-hidden rounded-[10px] border-2 border-[#F4F4F4] bg-zinc-200 shadow-[10px_10px_10px_#8E8E8E33]">
+                  <SmartImage
                     src={posterUrl}
                     alt={`Film poster — ${title}`}
-                    width={900}
-                    height={1332}
-                    className="h-auto w-full object-cover"
+                    fill
+                    className="object-cover"
                     sizes="(max-width: 639px) 78vw, (max-width: 767px) 68vw, (max-width: 1023px) 44vw, (max-width: 1279px) 30vw, 26vw"
                     priority
                   />
