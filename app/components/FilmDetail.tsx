@@ -125,13 +125,14 @@ export default function FilmDetail({ film }: { film: Film }) {
     ? `/completed-films?director=${encodeURIComponent(directorName)}`
     : "/completed-films";
 
-  const heroLayoutClass = posterUrl
-    ? hasAwards
-      ? "lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)_minmax(220px,300px)] xl:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_minmax(240px,320px)]"
-      : "lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] xl:grid-cols-[minmax(260px,300px)_minmax(0,1fr)]"
-    : hasAwards
-      ? "lg:grid-cols-[minmax(0,1fr)_minmax(220px,300px)] xl:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]"
-      : "lg:grid-cols-[minmax(0,1fr)]";
+  // Poster is positioned absolutely on lg+ so the dark hero's height is
+  // determined by the title block alone — letting the poster naturally extend
+  // below the dark band into the white synopsis section. The hero reserves
+  // left padding for the poster on lg+; the grid only lays out title + awards.
+  const heroReservedClass = posterUrl ? "lg:pl-[330px] xl:pl-[370px]" : "";
+  const heroGridClass = hasAwards
+    ? "lg:grid-cols-[minmax(0,1fr)_minmax(220px,300px)] xl:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]"
+    : "lg:grid-cols-1";
 
   const galleryImages = (Array.isArray(film.images) ? film.images : [])
     .map((img: string, idx: number) => {
@@ -149,30 +150,29 @@ export default function FilmDetail({ film }: { film: Film }) {
   ].filter(Boolean);
 
   return (
-    <div className="w-full min-h-screen overflow-x-hidden bg-zinc-50 pb-20">
+    <div className="w-full min-h-screen overflow-x-hidden bg-zinc-50">
 
       {/* Responsive hero */}
       <section className="w-full overflow-visible bg-[#1C1C1C] text-white">
-        <div className="mx-auto max-w-400 px-4 pb-12 pt-7 sm:px-6 sm:pb-14 sm:pt-9 md:px-8 lg:px-10 lg:pb-10 lg:pt-12">
-          <div className={`grid gap-8 lg:items-start lg:gap-6 xl:gap-8 ${heroLayoutClass}`}>
-            {posterUrl && (
-              <div className="relative z-20 mx-auto w-full max-w-70 sm:max-w-80 md:max-w-90 lg:mx-0 lg:max-w-72.5 lg:translate-y-20 xl:max-w-[320px] xl:translate-y-24 2xl:translate-y-28">
-                <div className="relative aspect-2/3 overflow-hidden rounded-[10px] border-2 border-[#F4F4F4] bg-zinc-200 shadow-[10px_10px_10px_#8E8E8E33]">
-                  <SmartImage
-                    src={posterUrl}
-                    alt={`Film poster — ${title}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 639px) 78vw, (max-width: 767px) 68vw, (max-width: 1023px) 44vw, (max-width: 1279px) 30vw, 26vw"
-                    priority
-                  />
-                </div>
+        <div className={`relative mx-auto max-w-400 px-4 pb-12 pt-7 sm:px-6 sm:pb-14 sm:pt-9 md:px-8 lg:px-10 lg:pb-10 lg:pt-12 ${heroReservedClass}`}>
+          {posterUrl && (
+            <div className="relative z-20 mx-auto mb-8 w-full max-w-70 sm:max-w-80 md:max-w-90 lg:absolute lg:left-10 lg:top-12 lg:mx-0 lg:mb-0 lg:w-[280px] xl:w-[300px]">
+              <div className="relative aspect-2/3 overflow-hidden rounded-[10px] border-2 border-[#F4F4F4] bg-zinc-200 shadow-[10px_10px_10px_#8E8E8E33]">
+                <SmartImage
+                  src={posterUrl}
+                  alt={`Film poster — ${title}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 639px) 78vw, (max-width: 767px) 68vw, (max-width: 1023px) 44vw, (max-width: 1279px) 30vw, 300px"
+                  priority
+                />
               </div>
-            )}
+            </div>
+          )}
 
-            <div className="flex min-w-0 w-full max-w-none justify-self-stretch flex-col gap-5 self-start sm:gap-6 lg:px-0 xl:px-2 2xl:px-4">
+          <div className={`grid gap-8 lg:items-start lg:gap-6 xl:gap-8 ${heroGridClass}`}>
+            <div className="flex min-w-0 w-full max-w-none flex-col gap-5 sm:gap-6">
               <div className="space-y-3 sm:space-y-4">
-                <p className="text-xs font-medium tracking-[0.24em] text-white/50 uppercase">Film</p>
                 <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl md:text-5xl lg:leading-[1.05]">{title}</h1>
                 {directorName && (
                   <p className="text-base text-white/80 md:text-lg">
@@ -206,7 +206,7 @@ export default function FilmDetail({ film }: { film: Film }) {
             </div>
 
             {hasAwards && (
-              <aside className="mx-auto w-full max-w-75 self-center justify-self-center rounded-3xl border border-[#E0A75D]/70 bg-[#171717] p-5 shadow-[0_28px_70px_-42px_rgba(0,0,0,0.8)] sm:p-6 lg:p-7">
+              <aside className="mx-auto w-full max-w-75 self-start rounded-3xl border border-[#E0A75D]/70 bg-[#171717] p-5 shadow-[0_28px_70px_-42px_rgba(0,0,0,0.8)] sm:p-6 lg:p-7">
                 <p className="mb-5 text-center text-xs font-medium uppercase tracking-[0.2em] text-[#F6DCA0] sm:tracking-[0.24em]">
                   Festivals &amp; Awards
                 </p>
@@ -363,14 +363,14 @@ export default function FilmDetail({ film }: { film: Film }) {
 
       {/* ── Director section ── */}
       {(directorImageUrl || directorName || recentFilmography.length > 0 || directorWordsEnglish) && (
-        <section className="mt-10 bg-[#DEDEDE] py-10 sm:py-12">
+        <section className="bg-[#DEDEDE] py-10 sm:py-12">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 md:px-8 lg:px-16">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
 
               {/* Left col — avatar + name + filmography card */}
               <div className="flex w-full max-w-70 shrink-0 flex-col items-center gap-4">
-                {directorImageUrl && (
-                  <div className="relative h-36 w-36 overflow-hidden rounded-full border-2 border-white/60 bg-zinc-300 shadow-md">
+                <div className="relative h-36 w-36 overflow-hidden rounded-full border-2 border-white/60 bg-zinc-300 shadow-md">
+                  {directorImageUrl && (
                     <SmartImage
                       src={directorImageUrl}
                       alt={directorName || "Director"}
@@ -379,8 +379,8 @@ export default function FilmDetail({ film }: { film: Film }) {
                       className="object-cover"
                       skeletonClassName="bg-zinc-300"
                     />
-                  </div>
-                )}
+                  )}
+                </div>
                 {directorName && (
                   <h3 className="text-center text-lg font-semibold text-zinc-900">{directorName}</h3>
                 )}
