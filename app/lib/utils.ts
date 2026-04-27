@@ -1,4 +1,15 @@
 /**
+ * Build a stable, same-origin proxy URL for a film image. The proxy resolves the
+ * record's currently-signed Airtable URL JIT, so HTML never holds an expiring URL.
+ * Non-Airtable sources (e.g. Vercel Blob fallbacks) pass through unchanged.
+ */
+export function filmImageUrl(slug: string, type: string, src?: string): string | undefined {
+  if (!src) return undefined;
+  if (!src.includes('airtableusercontent.com')) return src;
+  return `/api/img/film/${encodeURIComponent(slug)}/${encodeURIComponent(type)}`;
+}
+
+/**
  * Returns the URL only if it starts with http:// or https://, otherwise undefined.
  * Use this before rendering any URL from an external/CMS source as an href.
  */
