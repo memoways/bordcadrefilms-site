@@ -76,7 +76,7 @@ const unoptimized = isAirtableUrl || unoptimizedProp;
     <>
       {!loaded && (
         <div
-          className={`absolute inset-0 z-0 animate-pulse bg-zinc-200 ${skeletonClassName ?? ""}`.trim()}
+          className={`absolute inset-0 z-0 animate-pulse ${skeletonClassName ?? "bg-zinc-200"}`.trim()}
           aria-hidden
         />
       )}
