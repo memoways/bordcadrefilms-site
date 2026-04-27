@@ -113,7 +113,7 @@ export default function GalleryCarousel({ images, title }: { images: GalleryImag
                     sizes={isBlurred ? "160px" : "300px"}
                     className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     draggable={false}
-                    skeletonClassName="bg-zinc-800"
+                    skeletonClassName="bg-zinc-700"
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-zinc-800">
