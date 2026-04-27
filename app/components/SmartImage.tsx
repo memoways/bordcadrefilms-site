@@ -5,8 +5,12 @@ import { useEffect, useRef, useState } from "react";
 
 const RETRY_DELAYS_MS = [800, 2000, 5000];
 
-type SmartImageProps = Omit<ImageProps, "onLoad" | "onError" | "onLoadingComplete"> & {
+type SmartImageProps = Omit<
+  ImageProps,
+  "onLoad" | "onError" | "onLoadingComplete"
+> & {
   skeletonClassName?: string;
+  unoptimized?: boolean;
 };
 
 export default function SmartImage({
@@ -14,6 +18,7 @@ export default function SmartImage({
   alt,
   className,
   skeletonClassName,
+  unoptimized: unoptimizedProp,
   ...rest
 }: SmartImageProps) {
   const [trackedSrc, setTrackedSrc] = useState(src);
@@ -66,8 +71,7 @@ export default function SmartImage({
 
   // Airtable URLs are often very long; disable optimization to avoid 400 errors
   const isAirtableUrl = typeof src === "string" && src.includes("airtableusercontent.com");
-  const unoptimized = isAirtableUrl || (rest as Record<string, unknown>).unoptimized;
-
+const unoptimized = isAirtableUrl || unoptimizedProp;
   return (
     <>
       {!loaded && (
