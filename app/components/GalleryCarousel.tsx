@@ -150,7 +150,7 @@ export default function GalleryCarousel({ images, title }: { images: GalleryImag
             <button
               onClick={(e) => { e.stopPropagation(); navigate("prev"); }}
               className="absolute left-4 top-1/2 z-20 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/25"
-              aria-label="Précédent"
+              aria-label="Previous"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
@@ -159,7 +159,7 @@ export default function GalleryCarousel({ images, title }: { images: GalleryImag
             <button
               onClick={(e) => { e.stopPropagation(); navigate("next"); }}
               className="absolute right-4 top-1/2 z-20 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/25"
-              aria-label="Suivant"
+              aria-label="Next"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
@@ -205,7 +205,7 @@ export default function GalleryCarousel({ images, title }: { images: GalleryImag
           <button
             className="absolute left-6 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
             onClick={(e) => { e.stopPropagation(); setLightbox(mod(lightbox - 1)); }}
-            aria-label="Précédente"
+            aria-label="Previous image"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
@@ -215,7 +215,7 @@ export default function GalleryCarousel({ images, title }: { images: GalleryImag
           <button
             className="absolute right-6 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
             onClick={(e) => { e.stopPropagation(); setLightbox(mod(lightbox + 1)); }}
-            aria-label="Suivante"
+            aria-label="Next image"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
