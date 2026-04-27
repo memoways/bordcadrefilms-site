@@ -64,6 +64,10 @@ export default function SmartImage({
     }
   };
 
+  // Airtable URLs are often very long; disable optimization to avoid 400 errors
+  const isAirtableUrl = typeof src === "string" && src.includes("airtableusercontent.com");
+  const unoptimized = isAirtableUrl || (rest as Record<string, unknown>).unoptimized;
+
   return (
     <>
       {!loaded && (
@@ -79,6 +83,7 @@ export default function SmartImage({
           alt={alt}
           className={`${className ?? ""} ${loaded ? "" : "invisible"}`.trim()}
           {...rest}
+          unoptimized={unoptimized}
           onLoad={handleLoad}
           onError={handleError}
         />
