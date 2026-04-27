@@ -9,8 +9,8 @@ export default function AboutIntro({ description }: Props) {
     .filter(Boolean);
 
   return (
-    <section className="px-6 md:px-12 lg:px-20 pt-20 pb-16 md:pt-28 md:pb-20 bg-zinc-50">
-      <div className="max-w-7xl mx-auto">
+    <section className="pt-20 pb-16 md:pt-28 md:pb-20 bg-zinc-50">
+      <div className="max-w-6xl mx-auto px-4">
         <h1 className="text-4xl font-light text-zinc-900 tracking-tight mb-10 md:mb-16">
           About
         </h1>

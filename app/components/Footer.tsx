@@ -25,7 +25,7 @@ export default async function Footer() {
       className="text-white py-16"
       style={{ backgroundColor: "#2B2B2B" }}
     >
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 lg:gap-16">
 
           {/* Col 1 — Brand + contact */}
