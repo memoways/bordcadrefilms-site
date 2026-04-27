@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import AdminField from "../../components/AdminField";
+import ImageUploadField from "../../components/ImageUploadField";
 import AdminToast from "../../components/AdminToast";
 import { adminPatch, adminPost, adminDelete, adminRevalidate } from "../../lib/api";
 
@@ -101,6 +102,11 @@ function SortablePhotoRow({
         <AdminField label="Year" value={draft.year} onChange={(v) => setDraft((d) => ({ ...d, year: v }))} type="number" />
         <AdminField label="Order" value={String(draft.order)} onChange={(v) => setDraft((d) => ({ ...d, order: Number(v) || d.order }))} type="number" />
       </div>
+      <ImageUploadField
+        label="Image"
+        imageUrl={draft.imageUrl}
+        onImageUrlChange={(v) => setDraft((d) => ({ ...d, imageUrl: v }))}
+      />
       <div className="flex justify-end">
         <button
           onClick={() => onUpdate(draft)}
@@ -219,12 +225,19 @@ export function AboutClient({
   async function savePhoto(photo: FestivalPhoto) {
     setSavingPhoto(photo.id);
     try {
-      await adminPatch(PHOTO_TABLE, photo.id, {
+      const fieldsToUpdate: Record<string, unknown> = {
         title: photo.title,
         festival: photo.festival,
         year: photo.year,
         order: photo.order,
-      });
+      };
+
+      // Only include image if it's a URL string (not stored as attachment array)
+      if (photo.imageUrl) {
+        fieldsToUpdate.image = [{ url: photo.imageUrl }];
+      }
+
+      await adminPatch(PHOTO_TABLE, photo.id, fieldsToUpdate);
       await adminRevalidate("festival-photos");
       setPhotos((prev) => prev.map((p) => (p.id === photo.id ? photo : p)));
       setToast({ msg: "Photo saved", type: "success" });
@@ -253,15 +266,16 @@ export function AboutClient({
   async function addPhoto() {
     setAddingPhoto(true);
     try {
+      const currentYear = String(new Date().getFullYear());
       const result = (await adminPost(PHOTO_TABLE, {
         title: "New photo",
         festival: "",
-        year: new Date().getFullYear(),
+        year: currentYear,
         order: photos.length + 1,
       })) as { id: string };
       setPhotos((prev) => [
         ...prev,
-        { id: result.id, title: "New photo", festival: "", year: String(new Date().getFullYear()), imageUrl: "", order: prev.length + 1 },
+        { id: result.id, title: "New photo", festival: "", year: currentYear, imageUrl: "", order: prev.length + 1 },
       ]);
       setToast({ msg: "Photo added", type: "success" });
     } catch {
