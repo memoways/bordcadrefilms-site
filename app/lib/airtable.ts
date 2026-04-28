@@ -195,7 +195,7 @@ const _readAirtableFilms = unstable_cache(
     }
 
     const pressByMovie = _groupPressByMovie(linkRecords);
-    const { videosByMovie, pressKitByMovie } = _groupMediaByMovie(mediaRecords);
+    const { videosByMovie, pressKitByMovie } = await _groupMediaByMovie(mediaRecords);
     const films = _processFilmRecords(filmRecords, {
       pressByMovie,
       videosByMovie,
@@ -443,10 +443,10 @@ const VIDEO_CATEGORY_LABELS: Record<string, { label: string; type: FilmVideo['ty
 // `FID Movie Name` (often equal to Movie title) as join keys. Filters: Publish=true,
 // Availability includes "Public", and either Type=Video with urlMedia or Type=PDF
 // with attachment + category=Press kit.
-function _groupMediaByMovie(records: AirtableRecord[]): {
+async function _groupMediaByMovie(records: AirtableRecord[]): Promise<{
   videosByMovie: Map<string, FilmVideo[]>;
   pressKitByMovie: Map<string, string>;
-} {
+}> {
   const videosByMovie = new Map<string, FilmVideo[]>();
   const pressKitByMovie = new Map<string, string>();
 
@@ -523,6 +523,43 @@ function _groupMediaByMovie(records: AirtableRecord[]): {
         // by toggling Publish if multiple language variants exist.
         if (!pressKitByMovie.has(key)) pressKitByMovie.set(key, url);
       }
+    }
+  }
+
+  // Resolve Vimeo thumbnails via the public oEmbed endpoint. YouTube can
+  // synthesize a thumbnail URL from the video ID alone (img.youtube.com/vi/X);
+  // Vimeo cannot — its thumbnail lives at i.vimeocdn.com under an opaque ID
+  // that only the API exposes. Done in parallel and per-unique-id so 32
+  // Vimeo videos cost roughly the latency of one oEmbed call.
+  const vimeoVideos = new Map<string, FilmVideo[]>();
+  for (const arr of videosByMovie.values()) {
+    for (const v of arr) {
+      const m = v.url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      if (!m) continue;
+      const list = vimeoVideos.get(m[1]) ?? [];
+      list.push(v);
+      vimeoVideos.set(m[1], list);
+    }
+  }
+  if (vimeoVideos.size > 0) {
+    const entries = await Promise.all(
+      Array.from(vimeoVideos.keys()).map(async (id): Promise<[string, string | undefined]> => {
+        try {
+          const res = await fetch(
+            `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(`https://vimeo.com/${id}`)}`,
+            { next: { revalidate: 86400 } },
+          );
+          if (!res.ok) return [id, undefined];
+          const data = (await res.json()) as { thumbnail_url?: unknown };
+          return [id, typeof data.thumbnail_url === 'string' ? data.thumbnail_url : undefined];
+        } catch {
+          return [id, undefined];
+        }
+      }),
+    );
+    for (const [id, thumb] of entries) {
+      if (!thumb) continue;
+      for (const v of vimeoVideos.get(id) ?? []) v.thumbnail = thumb;
     }
   }
 

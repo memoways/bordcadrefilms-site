@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getValidImageUrl, safeExternalUrl } from "../lib/utils";
+import { filmImageUrl, getValidImageUrl, safeExternalUrl } from "../lib/utils";
 import { type Film } from "@/app/lib/airtable";
 import GalleryCarousel from "./GalleryCarousel";
 import SmartImage from "./SmartImage";
@@ -102,8 +102,8 @@ export default function FilmDetail({ film }: { film: Film }) {
   const filmAwards = film.awards || "";
   const filmImdb = safeExternalUrl(film.imdb) ?? "";
   const filmDuration = formatDurationLabel(film.duration);
-  const posterUrl = getValidImageUrl(film.poster);
-  const directorImageUrl = getValidImageUrl(film.profilePicture);
+  const posterUrl = filmImageUrl(film.slug, "poster", getValidImageUrl(film.poster));
+  const directorImageUrl = filmImageUrl(film.slug, "profile", getValidImageUrl(film.profilePicture));
   const tagline = film.tagline || "";
   const synopsis = film.synopsis || "";
   const directorWordsEnglish = film.directorWordsEnglish || "";
@@ -119,7 +119,7 @@ export default function FilmDetail({ film }: { film: Film }) {
     .filter((e) => e.title.toLowerCase() !== title.toLowerCase())
     .slice(0, 3);
   const hasAwards = awardsList.length > 0;
-  const festivalLogoUrl = getValidImageUrl(film.festivalLogoUrl);
+  const festivalLogoUrl = filmImageUrl(film.slug, "festival", getValidImageUrl(film.festivalLogoUrl));
   const quote = parseQuote(film.quoteEN || film.quoteFR);
   const heroQuoteText = quote?.text || tagline;
   const heroQuoteAuthor = quote?.author;
@@ -152,7 +152,8 @@ export default function FilmDetail({ film }: { film: Film }) {
 
   const galleryImages = (Array.isArray(film.images) ? film.images : [])
     .map((img: string, idx: number) => {
-      const url = getValidImageUrl(img);
+      const direct = getValidImageUrl(img);
+      const url = filmImageUrl(film.slug, `image-${idx}`, direct);
       if (!url) return null;
       return { url, alt: `${title} - image ${idx + 1}` };
     })
@@ -173,7 +174,7 @@ export default function FilmDetail({ film }: { film: Film }) {
         <div className={`relative mx-auto max-w-6xl px-4 pb-12 pt-7 sm:pb-14 sm:pt-9 lg:min-h-[480px] lg:pb-10 lg:pt-12 ${heroReservedClass}`}>
           {posterUrl && (
             <div className="relative z-20 mx-auto mb-8 w-full max-w-70 sm:max-w-80 md:max-w-90 lg:absolute lg:left-4 lg:top-12 lg:mx-0 lg:mb-0 lg:w-[280px] xl:w-[300px]">
-              <div className="relative aspect-2/3 overflow-hidden rounded-[10px] border-2 border-[#F4F4F4] bg-zinc-200 shadow-[10px_10px_10px_#8E8E8E33]">
+              <div className="relative aspect-2/3 overflow-hidden rounded-[10px] bg-zinc-200 shadow-[10px_10px_10px_#8E8E8E33]">
                 <SmartImage
                   src={posterUrl}
                   alt={`Film poster — ${title}`}
@@ -288,7 +289,7 @@ export default function FilmDetail({ film }: { film: Film }) {
 
             {/* Right column: Synopsis + Cast/Crew/Production/Tech */}
             {(synopsis || hasInfoBox) && (
-              <div className="w-full max-w-4xl space-y-8">
+              <div className="w-full max-w-4xl space-y-8 lg:col-start-2">
                 {synopsis && (
                   <div>
                     <h3 className="mb-3 border-b border-zinc-200 pb-2 text-xl font-bold text-zinc-900">Synopsis</h3>

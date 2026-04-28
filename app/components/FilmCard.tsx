@@ -14,16 +14,16 @@ export default function FilmCard({ film, priority = false }: { film: Film; prior
       className={`bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden flex flex-col transition-all duration-200 ${filmUrl ? "cursor-pointer hover:shadow-md hover:-translate-y-1" : "opacity-70 cursor-default"}`}
       tabIndex={filmUrl ? 0 : -1}
     >
-      <div className="relative w-full aspect-2/3 bg-zinc-100">
+      <div className="overflow-hidden relative w-full aspect-2/3 bg-zinc-100">
         {imgUrl ? (
           <SmartImage
             src={imgUrl}
             alt={altText}
             fill
-            className="object-contain"
+            className="object-cover"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 320px"
             priority={priority}
-            style={{ objectFit: "contain", background: "#f4f4f5" }}
+            style={{ objectFit: "cover", background: "#f4f4f5" }}
             skeletonClassName="bg-zinc-100"
           />
         ) : (
