@@ -1,5 +1,5 @@
 import { type Film } from "../lib/airtable";
-import FilmGridClientFixed from "./FilmGridClient";
+import FilmGridClient from "./FilmGridClient";
 
 export default function FilmGridFixed({ films, limit, initialSearch }: { films: Film[]; limit?: number; initialSearch?: string }) {
   if (!films || films.length === 0) {
@@ -18,5 +18,5 @@ export default function FilmGridFixed({ films, limit, initialSearch }: { films: 
     );
   }
 
-  return <FilmGridClientFixed films={films} limit={limit} initialSearch={initialSearch} />;
+  return <FilmGridClient films={films} limit={limit} initialSearch={initialSearch} />;
 }
