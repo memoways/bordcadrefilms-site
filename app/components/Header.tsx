@@ -9,7 +9,7 @@ type NavLink = { href: string; label: string; prefetch?: true };
 const ALL_NAV_LINKS: NavLink[] = [
   { href: "/", label: "Home" },
   { href: "/news", label: "News", prefetch: true },
-  { href: "/completed-films", label: "Films", prefetch: true },
+  { href: "/films", label: "Films", prefetch: true },
   { href: "/directors", label: "Directors", prefetch: true },
   { href: "/about", label: "About", prefetch: true },
 ];

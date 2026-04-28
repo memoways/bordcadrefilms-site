@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     revalidatePath("/");
     revalidatePath("/about");
     revalidatePath("/news");
-    revalidatePath("/completed-films");
+    revalidatePath("/films");
     return NextResponse.json({ revalidated: "all" });
   }
 

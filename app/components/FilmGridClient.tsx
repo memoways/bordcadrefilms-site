@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { type Film } from "../lib/airtable";
-import FilmCard from "./FilmCard";
+import FilmCardFixed from "./FilmCard";
 import FilmFilters, { type FilmFilterValues } from "./FilmFilters";
 
 const PAGE_SIZE = 12;
@@ -16,7 +16,7 @@ function splitMultiValue(value?: string): string[] {
 
 const EMPTY_FILTERS: FilmFilterValues = { year: "", genre: "", country: "" };
 
-export default function FilmGridClient({
+export default function FilmGridClientFixed({
   films,
   limit,
   initialSearch = "",
@@ -62,7 +62,6 @@ export default function FilmGridClient({
     [sourceFilms],
   );
 
-  // Handlers qui resetent la pagination quand on change la recherche / les filtres
   const handleSearchChange = (value: string) => {
     setSearch(value);
     if (!limit) {
@@ -191,7 +190,7 @@ export default function FilmGridClient({
         <>
           <section className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 w-full">
             {displayed.map((film, idx) => (
-              <FilmCard
+              <FilmCardFixed
                 key={film.slug || film.title || idx}
                 film={film}
                 priority={limit ? idx < limit : idx < PAGE_SIZE}

@@ -161,7 +161,7 @@ export default async function DirectorDetailPage({
 								className="border-b border-zinc-300 pb-4 last:border-b-0 last:pb-0"
 							>
 								<Link
-									href={`/completed-films/${entry.slug}`}
+									href={`/films/${entry.slug}`}
 									className="grid gap-4 sm:grid-cols-[190px_minmax(0,1fr)] sm:items-start"
 								>
 									<div className="relative aspect-[16/9] overflow-hidden rounded-lg border border-zinc-300 bg-zinc-900">

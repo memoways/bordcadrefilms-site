@@ -10,7 +10,7 @@ export default function HomeFilmGridPreview({ films }: { films: Film[] }) {
         <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-zinc-900">Our Films</h2>
         <FilmGrid films={films} limit={6} />
         <div className="flex justify-center mt-4">
-          <Link href="/completed-films" prefetch className="px-6 py-2 rounded-lg brand-btn-primary font-normal transition-all duration-150 shadow-sm">
+          <Link href="/films" prefetch className="px-6 py-2 rounded-lg brand-btn-primary font-normal transition-all duration-150 shadow-sm">
             View all films
           </Link>
         </div>

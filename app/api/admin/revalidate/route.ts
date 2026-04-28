@@ -20,10 +20,10 @@ const PATH_MAP: Record<string, string[]> = {
   "bcf-numbers": ["/about"],
   team: ["/about"],
   "festival-photos": ["/about"],
-  films: ["/completed-films"],
+  films: ["/films"],
   // Footer shows on every page — tag revalidation handles the fetch cache,
   // plus nudge the key SSG paths so they regenerate.
-  "social-media": ["/", "/news", "/about", "/directors", "/completed-films"],
+  "social-media": ["/", "/news", "/about", "/directors", "/films"],
 };
 
 // POST /api/admin/revalidate
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     revalidatePath("/");
     revalidatePath("/about");
     revalidatePath("/news");
-    revalidatePath("/completed-films");
+    revalidatePath("/films");
     return NextResponse.json({ revalidated: "all" });
   }
 

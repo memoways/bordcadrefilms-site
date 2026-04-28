@@ -39,7 +39,7 @@ function formatDurationLabel(value?: string): string {
   const remainingMinutes = totalMinutes % 60;
 
   if (hours === 0) return `${totalMinutes} min`;
-  if (remainingMinutes === 0) return `${hours}h`;
+  if (remainingMinutes === 0) return `${hours}m`;
 
   return `${hours}h ${String(remainingMinutes).padStart(2, "0")}`;
 }
@@ -124,8 +124,8 @@ export default function FilmDetail({ film }: { film: Film }) {
   const heroQuoteText = quote?.text || tagline;
   const heroQuoteAuthor = quote?.author;
   const directorFilmsHref = directorName
-    ? `/completed-films?director=${encodeURIComponent(directorName)}`
-    : "/completed-films";
+    ? `/films?director=${encodeURIComponent(directorName)}`
+    : "/films";
 
   // Poster is positioned absolutely on lg+ so the dark hero's height is
   // determined by the title block alone — letting the poster naturally extend
@@ -165,7 +165,7 @@ export default function FilmDetail({ film }: { film: Film }) {
     filmYear,
     filmDuration ? `${filmDuration}` : "",
   ].filter(Boolean);
-
+console.log(metaParts)
   return (
     <div className="w-full min-h-screen overflow-x-hidden bg-zinc-50">
 
@@ -196,7 +196,7 @@ export default function FilmDetail({ film }: { film: Film }) {
                     Directed by <span className="underline decoration-white/30 decoration-1 underline-offset-4">{directorName}</span>
                   </p>
                 )}
-                {metaParts.length > 0 && <p className="text-sm tracking-wide text-white/60">{metaParts.join("  |  ")}</p>}
+                {metaParts.length > 0 && <p className="text-sm tracking-wide text-white/60">{metaParts.join("  |  ")}</p>  }
               </div>
 
               {genres.length > 0 && (

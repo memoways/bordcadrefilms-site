@@ -4,7 +4,7 @@ import { getSocialLinks } from "../lib/social";
 import { safeExternalUrl } from "../lib/utils";
 
 const NAV_LINKS = [
-  { label: "Films", href: "/completed-films" },
+  { label: "Films", href: "/films" },
   { label: "Directors", href: "/directors" },
   { label: "About", href: "/about" },
 ];
