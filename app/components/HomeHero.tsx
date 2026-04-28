@@ -6,7 +6,7 @@ type HomeHeroProps = {
 };
 
 export default function HomeHero({ hero }: HomeHeroProps) {
-  const title = hero.title || "Bord Cadre Films";
+  const title = hero.title || "Bord Cadre Films.";
   const subtitle =
     hero.subtitle ||
     "Independent film production company based in Geneva, specialising in arthouse features and short films, with an international presence at festivals and co-productions.";
