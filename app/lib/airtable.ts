@@ -9,6 +9,10 @@ const BASE_ID = process.env.AIRTABLE_BASE_ID!;
 // IDs des deux autres tables de la même base (synchronisées, pas de vue custom).
 const SYNC_LINKS_TABLE_ID = 'tblUeAy7N0myD5HkR';
 const SYNC_MEDIA_TABLE_ID = 'tblRM4z90LYZcy5Tv';
+const CREW_TABLE_ID = 'tblOhvIC5ucfDKQM6';
+const PEOPLE_TABLE_ID = 'tblXf4qKCsbCbLRNl';
+const FESTIVALS_TABLE_NAME = 'Festivals';
+const FESTIVALS_VIEW_NAME = 'Vue de travail - Chloé';
 
 export type FilmVideo = {
   title: string;
@@ -24,9 +28,20 @@ export type PressArticle = {
   source?: string;
 };
 
+export type FilmCrewDetails = {
+  screenplay?: string;
+  cinematography?: string;
+  sound?: string;
+  edit?: string;
+  music?: string;
+  cast?: string;
+  productionCompany?: string;
+};
+
 export type Film = {
   slug: string;
   title: string;
+  originalTitle?: string;
   tagline?: string;
   directorWordsEnglish?: string;
   director?: string;
@@ -40,7 +55,6 @@ export type Film = {
   status?: string;
   publish?: string;
   category?: string;
-  awards?: string;
   imdb?: string;
   team?: string;
   images?: string[];
@@ -52,11 +66,8 @@ export type Film = {
   quoteEN?: string;
   quoteFR?: string;
   festivalLogoUrl?: string;
-  crewComplete?: string;
-  production?: string[];
-  coproduction?: string[];
-  premiereDate?: string;
-  mainUrl?: string;
+  crewDetails?: FilmCrewDetails;
+  awards?: string;
   videos?: FilmVideo[];
   pressArticles?: PressArticle[];
   pressKitUrl?: string;
@@ -64,6 +75,73 @@ export type Film = {
 
 type AirtableFieldMap = Record<string, unknown>;
 export type AirtableRecord = { id?: string; fields: AirtableFieldMap };
+
+type FetchAirtableOptions = {
+  baseId?: string;
+  filterByFormula?: string;
+  maxRecords?: number;
+};
+
+const FILM_FIELDS = [
+  'Movie title',
+  'Original Title',
+  'Release Year',
+  'Synopsis EN',
+  'Tagline EN',
+  'Tagline FR',
+  'Director (Lookup)',
+  'Director (People Table)',
+  'Director Bio EN',
+  'Director Bio FR',
+  'Poster Lookup',
+  'Pictures (published) - Movie',
+  'Pictures (published) - MISC',
+  'Pictures',
+  'Director profile picture',
+  'Genre',
+  'NationsFullNameEn (from Countries (Linked Record))',
+  'NationsFullNameFR (from Countries (Linked Record))',
+  'Countries (Linked Record)',
+  'Status Table',
+  'Publish',
+  'Category',
+  'IMDB page',
+  'Team (People Table)',
+  "Director's words - english",
+  "Director's words - french",
+  'Director Statement EN',
+  'Director Statement FR',
+  'Director Filmo',
+  'Director Filmography EN',
+  'Film Duration hmm',
+  'Quote EN',
+  'Quote FR',
+  'Festival Organization Logo',
+  'CrewComplete (from Crew)',
+];
+
+const CREW_FIELDS = [
+  'TitleOfMovie',
+  'CrewComplete',
+  'Main cast',
+  'Screenplay People Table',
+  'Cinematography People Table',
+  'Sound People Table',
+  'Editor People Table',
+  'Music People Table',
+];
+
+const PEOPLE_FIELDS = [
+  'FullName',
+];
+
+const FESTIVAL_FIELDS = [
+  'Movie',
+  'AwardStatement EN',
+  'Name Selection EN',
+  'Type',
+  'Logo of festival or award',
+];
 
 function collectTextValues(value: unknown): string[] {
   if (typeof value === 'string') {
@@ -124,16 +202,20 @@ export async function fetchAirtableRecords(
   tableName: string,
   fields?: string[],
   viewName?: string | null,
+  options?: FetchAirtableOptions,
 ): Promise<AirtableRecord[]> {
   const allRecords: AirtableRecord[] = [];
   let offset: string | undefined;
   // Default to the legacy films view; pass null to fetch a table without view filtering.
   const view = viewName === undefined ? VIEW_NAME : viewName;
+  const baseId = options?.baseId ?? BASE_ID;
 
   do {
-    const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(tableName)}`);
+    const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`);
     if (view) url.searchParams.set('view', view);
     if (offset) url.searchParams.set('offset', offset);
+    if (options?.filterByFormula) url.searchParams.set('filterByFormula', options.filterByFormula);
+    if (options?.maxRecords) url.searchParams.set('maxRecords', String(options.maxRecords));
     if (fields) {
       for (const field of fields) url.searchParams.append('fields[]', field);
     }
@@ -176,10 +258,13 @@ const _readAirtableFilms = unstable_cache(
     // Films are required; their absence is fatal (cache-skipping).
     // Links / Media enrichment is best-effort: if either fetch fails (e.g. 403,
     // transient outage) the page still renders, just without those sections.
-    const [filmsResult, linksResult, mediaResult] = await Promise.allSettled([
-      fetchAirtableRecords(TABLE_NAME),
+    const [filmsResult, linksResult, mediaResult, crewResult, peopleResult, festivalResult] = await Promise.allSettled([
+      fetchAirtableRecords(TABLE_NAME, FILM_FIELDS),
       fetchAirtableRecords(SYNC_LINKS_TABLE_ID, undefined, null),
       fetchAirtableRecords(SYNC_MEDIA_TABLE_ID, undefined, null),
+      fetchAirtableRecords(CREW_TABLE_ID, CREW_FIELDS, null),
+      fetchAirtableRecords(PEOPLE_TABLE_ID, PEOPLE_FIELDS, null),
+      fetchAirtableRecords(FESTIVALS_TABLE_NAME, FESTIVAL_FIELDS, FESTIVALS_VIEW_NAME),
     ]);
 
     if (filmsResult.status === 'rejected') throw filmsResult.reason;
@@ -187,19 +272,36 @@ const _readAirtableFilms = unstable_cache(
 
     const linkRecords = linksResult.status === 'fulfilled' ? linksResult.value : [];
     const mediaRecords = mediaResult.status === 'fulfilled' ? mediaResult.value : [];
+    const festivalRecords = festivalResult.status === 'fulfilled' ? festivalResult.value : [];
     if (linksResult.status === 'rejected') {
       console.error('[Airtable] Links fetch failed, press articles unavailable:', linksResult.reason);
     }
     if (mediaResult.status === 'rejected') {
       console.error('[Airtable] Media fetch failed, videos and press kit unavailable:', mediaResult.reason);
     }
+    if (crewResult.status === 'rejected') {
+      console.error('[Airtable] Crew fetch failed, screenplay unavailable:', crewResult.reason);
+    }
+    if (peopleResult.status === 'rejected') {
+      console.error('[Airtable] People fetch failed, screenplay unavailable:', peopleResult.reason);
+    }
+    if (festivalResult.status === 'rejected') {
+      console.error('[Airtable] Festivals fetch failed, awards unavailable:', festivalResult.reason);
+    }
 
     const pressByMovie = _groupPressByMovie(linkRecords);
     const { videosByMovie, pressKitByMovie } = await _groupMediaByMovie(mediaRecords);
+    const crewByMovieId = _groupCrewByMovie(
+      crewResult.status === 'fulfilled' ? crewResult.value : [],
+      peopleResult.status === 'fulfilled' ? peopleResult.value : [],
+    );
+    const awardsByMovieId = _groupAwardsByMovie(festivalRecords);
     const films = _processFilmRecords(filmRecords, {
       pressByMovie,
       videosByMovie,
       pressKitByMovie,
+      crewByMovieId,
+      awardsByMovieId,
     });
     if (films.length === 0) {
       throw new Error('[Airtable] Empty film list — skipping cache');
@@ -227,7 +329,121 @@ type MovieJoin = {
   pressByMovie: Map<string, PressArticle[]>;
   videosByMovie: Map<string, FilmVideo[]>;
   pressKitByMovie: Map<string, string>;
+  crewByMovieId: Map<string, FilmCrewDetails>;
+  awardsByMovieId: Map<string, { statement: string; logoUrl?: string }>;
 };
+
+function parseCrewComplete(raw?: string): Record<string, string> {
+  if (!raw) return {};
+
+  const result: Record<string, string> = {};
+  for (const segment of raw.split('|')) {
+    const colon = segment.indexOf(':');
+    if (colon < 0) continue;
+    const key = segment.slice(0, colon).trim();
+    const value = segment.slice(colon + 1).trim().replace(/,\s*$/, '').trim();
+    if (key && value) result[key] = value;
+  }
+  return result;
+}
+
+function linkedPeopleNames(value: unknown, peopleById: Map<string, string>): string | undefined {
+  if (!Array.isArray(value)) return undefined;
+
+  const names = value
+    .map((id) => (typeof id === 'string' ? peopleById.get(id) : undefined))
+    .filter((name): name is string => Boolean(name));
+
+  return names.length > 0 ? names.join(', ') : undefined;
+}
+
+function stripLabel(value: string | undefined, label: string): string | undefined {
+  if (!value) return undefined;
+  const text = value.trim();
+  const prefix = `${label}:`;
+  return text.startsWith(prefix) ? text.slice(prefix.length).trim() || undefined : text;
+}
+
+function _groupAwardsByMovie(records: AirtableRecord[]): Map<string, { statement: string; logoUrl?: string }> {
+  const buckets = new Map<string, { statements: string[]; logoUrl?: string }>();
+
+  for (const record of records) {
+    const movieLinks = record.fields['Movie'];
+    if (!Array.isArray(movieLinks) || movieLinks.length === 0) continue;
+
+    const statement = joinTextValues(record.fields['AwardStatement EN']) || firstString(record.fields['Name Selection EN']);
+    if (!statement) continue;
+    const logoUrl = getValidImageUrl(record.fields['Logo of festival or award']);
+
+    for (const movieId of movieLinks) {
+      if (typeof movieId !== 'string') continue;
+      const bucket = buckets.get(movieId) || { statements: [], logoUrl: undefined };
+      
+      // Avoid duplicate statements (sometimes same award appears twice in different views)
+      if (!bucket.statements.includes(statement)) {
+        bucket.statements.push(statement);
+      }
+      
+      // Keep the first logo found for this movie
+      if (!bucket.logoUrl && logoUrl) {
+        bucket.logoUrl = logoUrl;
+      }
+      
+      buckets.set(movieId, bucket);
+    }
+  }
+
+  const result = new Map<string, { statement: string; logoUrl?: string }>();
+  for (const [movieId, bucket] of buckets) {
+    result.set(movieId, {
+      statement: bucket.statements.join('\n'),
+      logoUrl: bucket.logoUrl,
+    });
+  }
+
+  return result;
+}
+
+function _groupCrewByMovie(crewRecords: AirtableRecord[], peopleRecords: AirtableRecord[]): Map<string, FilmCrewDetails> {
+  const peopleById = new Map<string, string>();
+  for (const record of peopleRecords) {
+    if (!record.id) continue;
+    const name = firstString(record.fields['FullName']);
+    if (name) peopleById.set(record.id, name);
+  }
+
+  const out = new Map<string, FilmCrewDetails>();
+  for (const record of crewRecords) {
+    const movieIds = record.fields['TitleOfMovie'];
+    if (!Array.isArray(movieIds)) continue;
+
+    const crew = parseCrewComplete(firstString(record.fields['CrewComplete']));
+    const details: FilmCrewDetails = {
+      screenplay: linkedPeopleNames(record.fields['Screenplay People Table'], peopleById),
+      cinematography:
+        linkedPeopleNames(record.fields['Cinematography People Table'], peopleById) ||
+        crew['Cinematography'],
+      sound:
+        linkedPeopleNames(record.fields['Sound People Table'], peopleById) ||
+        crew['Sound Design'] ||
+        crew['Sound'],
+      edit:
+        linkedPeopleNames(record.fields['Editor People Table'], peopleById) ||
+        crew['Editor'],
+      music:
+        linkedPeopleNames(record.fields['Music People Table'], peopleById) ||
+        crew['Music'],
+      cast: stripLabel(firstString(record.fields['Main cast']), 'Main cast') || crew['Stars'],
+      productionCompany: crew['Production'],
+    };
+
+    for (const movieId of movieIds) {
+      if (typeof movieId === 'string') out.set(movieId, details);
+    }
+  }
+
+  return out;
+}
 
 function _processFilmRecords(records: AirtableRecord[], join?: MovieJoin): Film[] {
   const seen = new Set<string>();
@@ -262,33 +478,34 @@ function _processFilmRecords(records: AirtableRecord[], join?: MovieJoin): Film[
         return undefined;
       };
 
+      const movieCrew = parseCrewComplete(firstString(f['CrewComplete (from Crew)']));
+      const joinedCrew = record.id ? join?.crewByMovieId.get(record.id) : undefined;
+      const joinedAwards = record.id ? join?.awardsByMovieId.get(record.id) : undefined;
+
       return {
         slug,
-        title: firstString(f['title']) || firstString(f['Movie title']) || slug,
+        title: firstString(f['Movie title']) || slug,
+        originalTitle: firstString(f['Original Title']) || undefined,
         tagline:
-          firstString(f['Tagline FR']) ||
           firstString(f['Tagline EN']) ||
-          firstString(f['Tagline Fr']) ||
-          firstString(f['Tagline En']) ||
+          firstString(f['Tagline FR']) ||
           firstString(f['Tagline']) ||
           undefined,
         director: firstString(f['Director (Lookup)']) || firstString(f['Director (People Table)']) || firstString(f['Director']) || undefined,
         synopsis:
-          firstString(f['Synopsis FR']) ||
           firstString(f['Synopsis EN']) ||
           firstString(f['Synopsis']) ||
           firstString(f['Movie Synopsis']) ||
           undefined,
-        bio: firstString(f['bio']) || firstString(f['Director Bio FR']) || firstString(f['Director Bio EN']) || undefined,
+        bio: firstString(f['Director Bio EN']) || firstString(f['bio']) || firstString(f['Director Bio FR']) || undefined,
         poster: getValidImageUrl(f['Poster Lookup']) || getValidImageUrl(f['Pictures (published) - Movie']) || getValidImageUrl(f['Pictures (published) - MISC']) || getValidImageUrl(f['Pictures']) || undefined,
         profilePicture: getValidImageUrl(f['Director profile picture']) || undefined,
         year: (typeof f['Release Year'] === 'number' ? f['Release Year'].toString() : firstString(f['Release Year'])) || undefined,
         genres: firstString(f['Genre']) || undefined,
-        country: firstString(f['NationsFullNameFR (from Countries (Linked Record))']) || firstString(f['Countries (Linked Record)']) || undefined,
+        country: firstString(f['NationsFullNameEn (from Countries (Linked Record))']) || firstString(f['NationsFullNameFR (from Countries (Linked Record))']) || firstString(f['Countries (Linked Record)']) || undefined,
         status: firstString(f['Status Table']) || undefined,
         publish: firstString(f['Publish']) || undefined,
         category: firstString(f['Category']) || undefined,
-        awards: joinTextValues(f['Festival and Awards Name EN']) || joinTextValues(f['Festival and Awards Name FR']) || undefined,
         imdb: stringOrValue(f['IMDB page']) || undefined,
         team: firstString(f['Team (People Table)']) || undefined,
         images: allImageUrls(f['Pictures (published) - Movie']) || [],
@@ -298,8 +515,10 @@ function _processFilmRecords(records: AirtableRecord[], join?: MovieJoin): Film[
           joinTextValues(f['Director Words English']) ||
           undefined,
         directorStatement:
-          joinTextValues(f["Director's words - french"]) ||
           joinTextValues(f["Director's words - english"]) ||
+          joinTextValues(f["Director's words - french"]) ||
+          joinTextValues(f['Director Statement EN']) ||
+          joinTextValues(f['Director Statement FR']) ||
           joinTextValues(f['Director statement']) ||
           undefined,
         filmography: firstString(f['Director Filmo']) || undefined,
@@ -311,15 +530,20 @@ function _processFilmRecords(records: AirtableRecord[], join?: MovieJoin): Film[
           joinTextValues(f['Director Filmography FR']) ||
           undefined,
         duration: (typeof f['Film Duration hmm'] === 'number' ? f['Film Duration hmm'].toString() : firstString(f['Film Duration hmm'])) || undefined,
-        nations: firstString(f['NationsFullNameFR (from Countries (Linked Record))']) || undefined,
+        nations: firstString(f['NationsFullNameEn (from Countries (Linked Record))']) || firstString(f['NationsFullNameFR (from Countries (Linked Record))']) || undefined,
         quoteEN: firstString(f['Quote EN']) || undefined,
         quoteFR: firstString(f['Quote FR']) || undefined,
-        festivalLogoUrl: getValidImageUrl(f['Festival Organization Logo']) || undefined,
-        crewComplete: firstString(f['CrewComplete (from Crew)']) || undefined,
-        production: Array.isArray(f['Production']) ? (f['Production'] as unknown[]).map(v => typeof v === 'string' ? v.trim() : '').filter(Boolean) : undefined,
-        coproduction: Array.isArray(f['Co-production']) ? (f['Co-production'] as unknown[]).map(v => typeof v === 'string' ? v.trim() : '').filter(Boolean) : undefined,
-        premiereDate: firstString(f['Premier date']) || firstString(f['World Premiere']) || undefined,
-        mainUrl: firstString(f['Main url']) || undefined,
+        festivalLogoUrl: joinedAwards?.logoUrl || getValidImageUrl(f['Festival Organization Logo']) || undefined,
+        crewDetails: {
+          screenplay: joinedCrew?.screenplay,
+          cinematography: joinedCrew?.cinematography || movieCrew['Cinematography'],
+          sound: joinedCrew?.sound || movieCrew['Sound Design'] || movieCrew['Sound'],
+          edit: joinedCrew?.edit || movieCrew['Editor'],
+          music: joinedCrew?.music || movieCrew['Music'],
+          cast: joinedCrew?.cast || movieCrew['Stars'],
+          productionCompany: joinedCrew?.productionCompany || movieCrew['Production'],
+        },
+        awards: joinedAwards?.statement || undefined,
         videos: _resolveVideos(f, join),
         pressArticles: _resolvePressArticles(f, join),
         pressKitUrl: _resolvePressKitUrl(f, join),
