@@ -25,6 +25,7 @@ export type TeamMemberData = {
   bio?: string;
   image?: string;
   order: number;
+  public: boolean;
 };
 
 export type FestivalPhotoData = {
@@ -35,6 +36,7 @@ export type FestivalPhotoData = {
   festival?: string;
   year?: string;
   order: number;
+  public: boolean;
 };
 
 export type TeamResponse = {
@@ -128,7 +130,9 @@ export const readTeam = cache(async function readTeam(): Promise<TeamResponse> {
         bio: firstString(record.fields?.bio),
         image: getValidImageUrl(record.fields?.image),
         order: typeof record.fields?.order === "number" ? record.fields.order : idx + 1,
+        public: record.fields?.public === true || record.fields?.publish === true,
       }))
+      .filter((m) => m.public)
       .sort((a, b) => a.order - b.order);
 
     return {
@@ -178,7 +182,9 @@ export const readFestivalPhotos = cache(async function readFestivalPhotos(): Pro
         festival: firstString(record.fields?.festival),
         year: firstString(record.fields?.year),
         order: typeof record.fields?.order === "number" ? record.fields.order : idx + 1,
+        public: record.fields?.public === true || record.fields?.publish === true,
       }))
+      .filter((p) => p.public)
       .sort((a, b) => a.order - b.order);
 
     return {

@@ -33,6 +33,7 @@ async function getTeamData(): Promise<TeamMember[]> {
       bio: String(r.fields.bio ?? ""),
       imageUrl,
       order: typeof r.fields.order === "number" ? r.fields.order : i + 1,
+      public: Boolean(r.fields.public ?? r.fields.publish),
     };
   });
 }

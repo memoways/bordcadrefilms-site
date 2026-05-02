@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -48,6 +48,7 @@ export type FestivalPhoto = {
   year: string;
   imageUrl: string;
   order: number;
+  public: boolean;
 };
 
 // ── Sortable photo row ────────────────────────────────────────────────────
@@ -100,7 +101,24 @@ function SortablePhotoRow({
         <AdminField label="Title" value={draft.title} onChange={(v) => setDraft((d) => ({ ...d, title: v }))} />
         <AdminField label="Festival" value={draft.festival} onChange={(v) => setDraft((d) => ({ ...d, festival: v }))} />
         <AdminField label="Year" value={draft.year} onChange={(v) => setDraft((d) => ({ ...d, year: v }))} type="number" />
-        <AdminField label="Order" value={String(draft.order)} onChange={(v) => setDraft((d) => ({ ...d, order: Number(v) || d.order }))} type="number" />
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <AdminField label="Order" value={String(draft.order)} onChange={(v) => setDraft((d) => ({ ...d, order: Number(v) || d.order }))} type="number" />
+          </div>
+          <div className="pb-2">
+            <label className="flex items-center gap-2 cursor-pointer select-none group">
+              <input
+                type="checkbox"
+                checked={draft.public}
+                onChange={(e) => setDraft((d) => ({ ...d, public: e.target.checked }))}
+                className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 transition-colors"
+              />
+              <span className="text-xs font-medium text-zinc-500 group-hover:text-zinc-700 transition-colors">
+                Public
+              </span>
+            </label>
+          </div>
+        </div>
       </div>
       <ImageUploadField
         label="Image"
@@ -133,6 +151,7 @@ export function AboutClient({
   initialFounder: FounderData | null;
   initialPhotos: FestivalPhoto[];
 }) {
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const [intro, setIntro] = useState<AboutIntroData>(
     initialIntro ?? { id: "", title: "", subtitle: "", description: "" },
@@ -147,12 +166,19 @@ export function AboutClient({
   const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
   const [addingPhoto, setAddingPhoto] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
   const dismiss = useCallback(() => setToast(null), []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  if (!mounted) return <div className="p-8 text-zinc-400 animate-pulse">Loading editor...</div>;
 
   async function saveIntro() {
     setSavingIntro(true);
@@ -230,6 +256,7 @@ export function AboutClient({
         festival: photo.festival,
         year: photo.year,
         order: photo.order,
+        public: photo.public,
       };
 
       // Only include image if it's a URL string (not stored as attachment array)
@@ -272,10 +299,11 @@ export function AboutClient({
         festival: "",
         year: currentYear,
         order: photos.length + 1,
+        public: false,
       })) as { id: string };
       setPhotos((prev) => [
         ...prev,
-        { id: result.id, title: "New photo", festival: "", year: currentYear, imageUrl: "", order: prev.length + 1 },
+        { id: result.id, title: "New photo", festival: "", year: currentYear, imageUrl: "", order: prev.length + 1, public: false },
       ]);
       setToast({ msg: "Photo added", type: "success" });
     } catch {
@@ -286,93 +314,113 @@ export function AboutClient({
   }
 
   return (
-    <div className="max-w-2xl space-y-8">
-      <h1 className="text-xl font-semibold text-zinc-900">About</h1>
-
-      {/* About Intro */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-semibold text-zinc-800">About text</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">Displayed at the top of the About page</p>
-          </div>
-          <button
-            onClick={saveIntro}
-            disabled={savingIntro}
-            className="px-4 py-1.5 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
-          >
-            {savingIntro ? "Saving…" : "Save"}
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <AdminField label="Title" value={intro.title} onChange={(v) => setIntro((d) => ({ ...d, title: v }))} />
-          <AdminField label="Subtitle" value={intro.subtitle} onChange={(v) => setIntro((d) => ({ ...d, subtitle: v }))} placeholder="e.g. Depuis 2008" />
-        </div>
-        <AdminField
-          label="Description"
-          value={intro.description}
-          onChange={(v) => setIntro((d) => ({ ...d, description: v }))}
-          multiline
-          rows={5}
-        />
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-zinc-900">About Page</h1>
       </div>
 
-      {/* Founder Bio */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-zinc-800">Founder Bio</h2>
-          <button
-            onClick={saveFounder}
-            disabled={savingFounder}
-            className="px-4 py-1.5 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
-          >
-            {savingFounder ? "Saving…" : "Save"}
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <AdminField label="Name" value={founder.name} onChange={(v) => setFounder((f) => ({ ...f, name: v }))} />
-          <AdminField label="Title / Role" value={founder.title} onChange={(v) => setFounder((f) => ({ ...f, title: v }))} />
-        </div>
-        <AdminField label="Bio" value={founder.bio} onChange={(v) => setFounder((f) => ({ ...f, bio: v }))} multiline rows={6} />
-        <p className="text-xs text-zinc-400">Profile image is managed via Airtable attachments field.</p>
-      </div>
-
-      {/* Festival Photos */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-zinc-800">Festival Photos</h2>
-          <button
-            onClick={addPhoto}
-            disabled={addingPhoto}
-            className="px-4 py-1.5 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
-          >
-            {addingPhoto ? "Adding…" : "+ Add photo"}
-          </button>
-        </div>
-        <p className="text-xs text-zinc-400">Drag to reorder. Images are managed via Airtable attachments.</p>
-
-        {photos.length === 0 && (
-          <div className="text-center py-10 text-zinc-400 text-sm border border-dashed border-zinc-200 rounded-xl">
-            No festival photos yet.
-          </div>
-        )}
-
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePhotoDragEnd}>
-          <SortableContext items={photos.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3">
-              {photos.map((p) => (
-                <SortablePhotoRow
-                  key={p.id}
-                  photo={p}
-                  onDelete={deletePhoto}
-                  onUpdate={savePhoto}
-                  deleting={deletingPhoto === p.id}
-                  saving={savingPhoto === p.id}
-                />
-              ))}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+        {/* Left Column: Text Content */}
+        <div className="space-y-8">
+          {/* About Intro */}
+          <div className="bg-white border border-zinc-200 rounded-2xl p-6 space-y-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-zinc-800 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  About Intro
+                </h2>
+                <p className="text-xs text-zinc-400 mt-0.5">Top of About page</p>
+              </div>
+              <button
+                onClick={saveIntro}
+                disabled={savingIntro}
+                className="px-4 py-1.5 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+              >
+                {savingIntro ? "Saving…" : "Save Intro"}
+              </button>
             </div>
-          </SortableContext>
-        </DndContext>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <AdminField label="Title" value={intro.title} onChange={(v) => setIntro((d) => ({ ...d, title: v }))} />
+              <AdminField label="Subtitle" value={intro.subtitle} onChange={(v) => setIntro((d) => ({ ...d, subtitle: v }))} placeholder="e.g. Depuis 2008" />
+            </div>
+            <AdminField
+              label="Description"
+              value={intro.description}
+              onChange={(v) => setIntro((d) => ({ ...d, description: v }))}
+              multiline
+              rows={6}
+            />
+          </div>
+
+          {/* Founder Bio */}
+          <div className="bg-white border border-zinc-200 rounded-2xl p-6 space-y-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-zinc-800 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Founder Bio
+              </h2>
+              <button
+                onClick={saveFounder}
+                disabled={savingFounder}
+                className="px-4 py-1.5 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+              >
+                {savingFounder ? "Saving…" : "Save Bio"}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <AdminField label="Name" value={founder.name} onChange={(v) => setFounder((f) => ({ ...f, name: v }))} />
+              <AdminField label="Title / Role" value={founder.title} onChange={(v) => setFounder((f) => ({ ...f, title: v }))} />
+            </div>
+            <AdminField label="Bio" value={founder.bio} onChange={(v) => setFounder((f) => ({ ...f, bio: v }))} multiline rows={8} />
+            <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium">Image managed in Airtable</p>
+          </div>
+        </div>
+
+        {/* Right Column: Photos */}
+        <div className="space-y-6">
+          <div className="bg-zinc-100/50 border border-zinc-200 rounded-2xl p-6 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-semibold text-zinc-800 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  Festival Gallery
+                </h2>
+                <p className="text-xs text-zinc-400 mt-0.5">Drag to reorder photos</p>
+              </div>
+              <button
+                onClick={addPhoto}
+                disabled={addingPhoto}
+                className="px-4 py-1.5 text-sm font-medium bg-white border border-zinc-200 text-zinc-900 rounded-lg hover:bg-zinc-50 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                {addingPhoto ? "Adding…" : "+ Add photo"}
+              </button>
+            </div>
+
+            {photos.length === 0 && (
+              <div className="text-center py-12 text-zinc-400 text-sm border-2 border-dashed border-zinc-200 rounded-xl bg-white">
+                No festival photos yet.
+              </div>
+            )}
+
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePhotoDragEnd}>
+              <SortableContext items={photos.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3">
+                  {photos.map((p) => (
+                    <SortablePhotoRow
+                      key={p.id}
+                      photo={p}
+                      onDelete={deletePhoto}
+                      onUpdate={savePhoto}
+                      deleting={deletingPhoto === p.id}
+                      saving={savingPhoto === p.id}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
+        </div>
       </div>
 
       <AdminToast message={toast?.msg ?? null} type={toast?.type} onDismiss={dismiss} />

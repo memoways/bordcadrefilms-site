@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import AdminField from "../../components/AdminField";
 import AdminToast from "../../components/AdminToast";
 import { adminPatch, adminPost, adminDelete, adminRevalidate } from "../../lib/api";
@@ -25,6 +25,7 @@ export type NewsRow = {
   link: string;
   imageUrl: string;
   order: number;
+  public: boolean;
 };
 
 function SortableRow({
@@ -47,142 +48,181 @@ function SortableRow({
   const [draft, setDraft] = useState<NewsRow>(item);
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-zinc-900 truncate">{item.title || "Untitled"}</p>
-          <p className="text-xs text-zinc-400 truncate">
-            {item.status}{item.director ? ` · ${item.director}` : ""}
-          </p>
+    <div className={`transition-all duration-300 ${expanded ? "col-span-full" : ""}`}>
+      <div className={`bg-white border rounded-xl overflow-hidden transition-all shadow-xs ${item.public ? "border-zinc-200" : "border-orange-200 bg-orange-50/30"} ${expanded ? "ring-2 ring-zinc-900/5 shadow-lg" : ""}`}>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-zinc-900 truncate">
+              {item.title || "Untitled"}
+              {!item.public && <span className="ml-2 text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Draft</span>}
+            </p>
+            <p className="text-xs text-zinc-400 truncate">
+              {item.status}{item.director ? ` · ${item.director}` : ""}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onExpand}
+            className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:border-zinc-400 transition-colors bg-white shadow-xs"
+          >
+            {expanded ? "Close" : "Edit"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(item.id)}
+            disabled={deleting}
+            className="text-xs px-2 py-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+          >
+            {deleting ? "…" : "✕"}
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={onExpand}
-          className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:border-zinc-400 transition-colors"
-        >
-          {expanded ? "Close" : "Edit"}
-        </button>
-        <button
-          type="button"
-          onClick={() => onDelete(item.id)}
-          disabled={deleting}
-          className="text-xs px-2 py-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
-        >
-          {deleting ? "…" : "✕"}
-        </button>
-      </div>
+        {expanded && (
+          <div className="border-t border-zinc-100 px-4 py-6 space-y-6 bg-zinc-50/50">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              {/* Left Column: Basic Info */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <AdminField
+                      label="Title"
+                      value={draft.title}
+                      onChange={(v) =>
+                        setDraft((d) => ({
+                          ...d,
+                          title: v,
+                          slug: d.slug === "" || d.slug === slugify(d.title) ? slugify(v) : d.slug,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="pt-5">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={draft.public}
+                        onChange={(e) => setDraft((d) => ({ ...d, public: e.target.checked }))}
+                        className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
+                      />
+                      <span className="text-sm font-medium text-zinc-700">Public</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <AdminField
+                    label="Slug (URL)"
+                    value={draft.slug}
+                    onChange={(v) => setDraft((d) => ({ ...d, slug: slugify(v) }))}
+                    placeholder="e.g. festival-premiere-2026"
+                  />
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">
+                      Status
+                    </label>
+                    <select
+                      value={draft.status}
+                      onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <AdminField
+                    label="Director"
+                    value={draft.director}
+                    onChange={(v) => setDraft((d) => ({ ...d, director: v }))}
+                  />
+                  <AdminField
+                    label="Location"
+                    value={draft.location}
+                    onChange={(v) => setDraft((d) => ({ ...d, location: v }))}
+                    placeholder="e.g. Cannes, France"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <AdminField
+                    label="Published date"
+                    value={draft.publishedAt}
+                    onChange={(v) => setDraft((d) => ({ ...d, publishedAt: v }))}
+                    placeholder="2026-04-24"
+                  />
+                  <AdminField
+                    label="External link"
+                    value={draft.link}
+                    onChange={(v) => setDraft((d) => ({ ...d, link: v }))}
+                    placeholder="https://…"
+                  />
+                </div>
+                <AdminField
+                  label="Image URL"
+                  value={draft.imageUrl}
+                  onChange={(v) => setDraft((d) => ({ ...d, imageUrl: v }))}
+                  placeholder="https://v5.airtableusercontent.com/…"
+                />
+              </div>
 
-      {expanded && (
-        <div className="border-t border-zinc-100 px-4 py-4 space-y-4 bg-zinc-50">
-          <AdminField
-            label="Title"
-            value={draft.title}
-            onChange={(v) =>
-              setDraft((d) => ({
-                ...d,
-                title: v,
-                // Auto-fill slug if empty or still matches previous auto-slug
-                slug:
-                  d.slug === "" || d.slug === slugify(d.title) ? slugify(v) : d.slug,
-              }))
-            }
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <AdminField
-              label="Slug (URL)"
-              value={draft.slug}
-              onChange={(v) => setDraft((d) => ({ ...d, slug: slugify(v) }))}
-              placeholder="e.g. festival-premiere-2026"
-            />
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">
-                Status
-              </label>
-              <select
-                value={draft.status}
-                onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+              {/* Right Column: Content */}
+              <div className="space-y-4">
+                <AdminField
+                  label="Excerpt (shown on card)"
+                  value={draft.excerpt}
+                  onChange={(v) => setDraft((d) => ({ ...d, excerpt: v }))}
+                  multiline
+                  rows={2}
+                />
+                <AdminField
+                  label="Full article content (blank line = new paragraph)"
+                  value={draft.content}
+                  onChange={(v) => setDraft((d) => ({ ...d, content: v }))}
+                  multiline
+                  rows={10}
+                />
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => onSave(draft)}
+                    disabled={saving}
+                    className="px-6 py-2.5 text-sm font-semibold bg-zinc-900 text-white rounded-xl hover:bg-zinc-700 disabled:opacity-50 transition-all shadow-md active:scale-[0.98]"
+                  >
+                    {saving ? "Saving…" : "Save Changes"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <AdminField
-              label="Director"
-              value={draft.director}
-              onChange={(v) => setDraft((d) => ({ ...d, director: v }))}
-            />
-            <AdminField
-              label="Location"
-              value={draft.location}
-              onChange={(v) => setDraft((d) => ({ ...d, location: v }))}
-              placeholder="e.g. Cannes, France"
-            />
-          </div>
-          <AdminField
-            label="Excerpt (shown on card)"
-            value={draft.excerpt}
-            onChange={(v) => setDraft((d) => ({ ...d, excerpt: v }))}
-            multiline
-            rows={2}
-          />
-          <AdminField
-            label="Content — full article (blank line = new paragraph)"
-            value={draft.content}
-            onChange={(v) => setDraft((d) => ({ ...d, content: v }))}
-            multiline
-            rows={6}
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <AdminField
-              label="Published date"
-              value={draft.publishedAt}
-              onChange={(v) => setDraft((d) => ({ ...d, publishedAt: v }))}
-              placeholder="2026-04-24"
-            />
-            <AdminField
-              label="External link (optional)"
-              value={draft.link}
-              onChange={(v) => setDraft((d) => ({ ...d, link: v }))}
-              placeholder="https://…"
-            />
-          </div>
-          <AdminField
-            label="Image URL (Airtable attachment URL)"
-            value={draft.imageUrl}
-            onChange={(v) => setDraft((d) => ({ ...d, imageUrl: v }))}
-            placeholder="https://v5.airtableusercontent.com/…"
-          />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => onSave(draft)}
-              disabled={saving}
-              className="px-4 py-1.5 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
-            >
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-export function NewsClient({ initialItems, table }: { initialItems: NewsRow[]; table: string }) {
+export default function NewsClient({
+  initialItems,
+  table,
+}: {
+  initialItems: NewsRow[];
+  table: string;
+}) {
+  const [mounted, setMounted] = useState(false);
   const [items, setItems] = useState<NewsRow[]>(initialItems);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
   const dismiss = useCallback(() => setToast(null), []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   function buildFields(row: NewsRow) {
     const fields: Record<string, unknown> = {
@@ -196,6 +236,7 @@ export function NewsClient({ initialItems, table }: { initialItems: NewsRow[]; t
       publishedAt: row.publishedAt,
       link: row.link,
       order: row.order,
+      publish: row.public,
     };
 
     if (row.imageUrl) {
@@ -214,6 +255,7 @@ export function NewsClient({ initialItems, table }: { initialItems: NewsRow[]; t
     try {
       await adminPatch(table, row.id, buildFields(row));
       await adminRevalidate("news");
+      await adminRevalidate("home-news");
       setItems((prev) => prev.map((m) => (m.id === row.id ? row : m)));
       setToast({ msg: "News saved", type: "success" });
     } catch (error) {
@@ -230,6 +272,7 @@ export function NewsClient({ initialItems, table }: { initialItems: NewsRow[]; t
     try {
       await adminDelete(table, id);
       await adminRevalidate("news");
+      await adminRevalidate("home-news");
       setItems((prev) => prev.filter((m) => m.id !== id));
       if (expanded === id) setExpanded(null);
       setToast({ msg: "News deleted", type: "success" });
@@ -256,6 +299,7 @@ export function NewsClient({ initialItems, table }: { initialItems: NewsRow[]; t
         excerpt: "Draft news item — update this text.",
         publishedAt: new Date().toISOString().slice(0, 10),
         image: [{ url: placeholderImage }],
+        publish: false,
       })) as { id: string };
       const newRow: NewsRow = {
         id: result.id,
@@ -270,6 +314,7 @@ export function NewsClient({ initialItems, table }: { initialItems: NewsRow[]; t
         link: "",
         imageUrl: placeholderImage,
         order: newOrder,
+        public: false,
       };
       setItems((prev) => [...prev, newRow]);
       await adminRevalidate("news");
@@ -282,6 +327,8 @@ export function NewsClient({ initialItems, table }: { initialItems: NewsRow[]; t
       setAdding(false);
     }
   }
+
+  if (!mounted) return <div className="p-8 text-zinc-400 animate-pulse">Loading updates...</div>;
 
   return (
     <div className="max-w-3xl space-y-6">

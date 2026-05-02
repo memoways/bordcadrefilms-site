@@ -14,6 +14,7 @@ export type NewsItem = {
   image: string;
   location: string;
   publishedAt: string;
+  public: boolean;
   link?: string;
 };
 
@@ -30,6 +31,8 @@ async function fetchNewsRecords(): Promise<AirtableRecord[]> {
     );
     url.searchParams.set('sort[0][field]', 'order');
     url.searchParams.set('sort[0][direction]', 'asc');
+    // We fetch all records including non-public ones so the admin can see them,
+    // but the getNews function used by the public site will filter them.
     if (offset) url.searchParams.set('offset', offset);
 
     const res = await fetch(url.toString(), {
@@ -85,10 +88,11 @@ export const getNews = cache(async (): Promise<NewsItem[]> => {
           image: getValidImageUrl(f['image']) ?? '',
           location: firstString(f['location']) ?? '',
           publishedAt: firstString(f['publishedAt']) ?? '',
+          public: f['public'] === true || f['publish'] === true,
           link: firstString(f['link']),
         };
       })
-      .filter((item): item is NewsItem => item !== null);
+      .filter((item): item is NewsItem => item !== null && item.public);
   } catch (err) {
     console.error('[Airtable] News fetch error:', err);
     return [];

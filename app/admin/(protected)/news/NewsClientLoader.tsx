@@ -7,7 +7,7 @@ const NewsClient = dynamic<{
   initialItems: NewsRow[];
   table: string;
 }>(
-  () => import("./NewsClient").then((mod) => mod.NewsClient),
+  () => import("./NewsClient"),
   {
     ssr: false,
     loading: () => (

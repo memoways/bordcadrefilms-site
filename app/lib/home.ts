@@ -32,6 +32,7 @@ export type NewsItemData = {
   status: string;
   publishedAt: string;
   order: number;
+  public: boolean;
 };
 
 export type BCFNumbersData = {
@@ -39,6 +40,7 @@ export type BCFNumbersData = {
   label: string;
   description?: string;
   order: number;
+  public: boolean;
 };
 
 export type HomeNewsResponse = {
@@ -133,7 +135,9 @@ export const readBCFNumbers = cache(async function readBCFNumbers(): Promise<BCF
         label: typeof record.fields?.label === "string" ? record.fields.label : "",
         description: typeof record.fields?.description === "string" ? record.fields.description : undefined,
         order: typeof record.fields?.order === "number" ? record.fields.order : idx + 1,
+        public: record.fields?.public === true || record.fields?.publish === true,
       }))
+      .filter((n) => n.public)
       .sort((a, b) => a.order - b.order);
 
     return {
@@ -159,7 +163,9 @@ export const readHomeNews = cache(async function readHomeNews(
         process.env.AIRTABLE_NEWS_TABLE || "News"
       )}`
     );
-    url.searchParams.set("maxRecords", limit.toString());
+    // Note: We don't use maxRecords here because we need to filter by 'public' 
+    // after fetching, and maxRecords happens before filtering.
+    // However, to keep it efficient and matching the limit, we'll fetch more and slice.
     url.searchParams.set("sort[0][field]", "publishedAt");
     url.searchParams.set("sort[0][direction]", "desc");
 
@@ -174,8 +180,8 @@ export const readHomeNews = cache(async function readHomeNews(
       records?: Array<{ id: string; fields?: Record<string, unknown> }>;
     };
 
-    const items: NewsItemData[] = data.records
-      ?.map((record) => ({
+    const items: NewsItemData[] = (data.records ?? [])
+      .map((record) => ({
         id: record.id,
         slug: firstString(record.fields?.slug) || record.id,
         title: firstString(record.fields?.title) || "Untitled",
@@ -184,8 +190,11 @@ export const readHomeNews = cache(async function readHomeNews(
         status: firstString(record.fields?.status) || "News",
         publishedAt: firstString(record.fields?.publishedAt) || new Date().toISOString(),
         order: typeof record.fields?.order === "number" ? record.fields.order : 0,
+        public: record.fields?.public === true || record.fields?.publish === true,
       }))
-      .sort((a, b) => b.order - a.order) || [];
+      .filter((item) => item.public)
+      .sort((a, b) => b.order - a.order)
+      .slice(0, limit);
 
     return {
       items,

@@ -37,6 +37,7 @@ async function getNewsData(): Promise<NewsRow[]> {
     link: firstString(r.fields.link) ?? "",
     imageUrl: getValidImageUrl(r.fields.image) ?? "",
     order: typeof r.fields.order === "number" ? r.fields.order : i + 1,
+    public: Boolean(r.fields.public ?? r.fields.publish),
   }));
 }
 

@@ -70,6 +70,7 @@ async function getAboutData(): Promise<{
     year: String(r.fields.year ?? ""),
     imageUrl: getImg(r.fields, "image"),
     order: typeof r.fields.order === "number" ? r.fields.order : i + 1,
+    public: Boolean(r.fields.public),
   }));
 
   return { intro, founder, photos };
