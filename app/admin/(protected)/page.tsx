@@ -71,7 +71,7 @@ export default async function AdminDashboard() {
   const firstName = user?.firstName ?? "there";
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <div className="space-y-8">
       {/* Greeting */}
       <div>
         <h1 className="text-2xl font-semibold text-zinc-900">
@@ -83,24 +83,25 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
         <StatCard label="Films" value={filmCount} sub="in catalogue" accent />
         <StatCard label="Team" value={teamCount} sub="members" href="/admin/team" />
         <StatCard label="News" value={newsCount} sub="published" href="/admin/news" />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Quick actions */}
-        <div>
-          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">
-            What would you like to do?
+        <section>
+          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+            Quick actions
           </h2>
-          <ul className="space-y-1.5">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-2">
             {QUICK_ACTIONS.map((a) => (
               <li key={a.href}>
                 <Link
                   href={a.href}
-                  className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-white border border-zinc-200 hover:border-zinc-400 transition-colors group"
+                  className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl bg-white border border-zinc-200 hover:border-zinc-400 transition-all group shadow-xs"
                 >
                   <div>
                     <p className="text-sm font-medium text-zinc-800 group-hover:text-zinc-900">
@@ -108,29 +109,32 @@ export default async function AdminDashboard() {
                     </p>
                     <p className="text-xs text-zinc-400">{a.desc}</p>
                   </div>
-                  <span className="text-zinc-300 group-hover:text-zinc-600 text-lg leading-none">→</span>
+                  <span className="text-zinc-300 group-hover:text-zinc-900 transform group-hover:translate-x-1 transition-all">→</span>
                 </Link>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
 
         {/* Publish changes */}
-        <div>
-          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">
+        <section>
+          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-900" />
             Publish to site
           </h2>
-          <ul className="space-y-1.5">
-            {PUBLISH_TAGS.map((t) => (
-              <li key={t.tag}>
-                <PublishButton tag={t.tag} label={t.label} path={t.path} />
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-zinc-400 mt-3">
-            After editing, click here to make your changes live.
-          </p>
-        </div>
+          <div className="bg-zinc-100/50 border border-zinc-200 rounded-2xl p-4 sm:p-6">
+            <ul className="space-y-2">
+              {PUBLISH_TAGS.map((t) => (
+                <li key={t.tag}>
+                  <PublishButton tag={t.tag} label={t.label} path={t.path} />
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-zinc-500 mt-4 px-1">
+              Changes are saved instantly but only go live on the public site after publishing.
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );

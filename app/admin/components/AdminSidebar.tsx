@@ -25,7 +25,52 @@ const PREVIEW_NAV: NavItem[] = [
   { href: "/admin/newsletter", label: "Newsletter", icon: "✉", preview: true },
 ];
 
-function NavLinks({ items, pathname }: { items: NavItem[]; pathname: string }) {
+export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
+  const pathname = usePathname();
+
+  return (
+    <aside className="w-full h-full border-r border-zinc-200 bg-white flex flex-col">
+      {/* Brand */}
+      <div className="px-5 py-5 border-b border-zinc-100 flex items-center justify-between">
+        <div>
+          <p className="text-[10px] tracking-[0.18em] uppercase text-zinc-400">
+            Bord Cadre Films
+          </p>
+          <p className="text-sm font-semibold text-zinc-900 mt-0.5">Content Manager</p>
+        </div>
+        {onClose && (
+          <button onClick={onClose} className="lg:hidden p-2 text-zinc-400">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5">
+        <div>
+          <NavLinks items={NAV} pathname={pathname} onClose={onClose} />
+        </div>
+        <div>
+          <p className="px-3 mb-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">
+            Coming soon
+          </p>
+          <NavLinks items={PREVIEW_NAV} pathname={pathname} onClose={onClose} />
+        </div>
+      </nav>
+
+      {/* Help hint */}
+      <div className="px-5 py-4 border-t border-zinc-100">
+        <p className="text-[11px] text-zinc-500 leading-relaxed">
+          Need help? Contact your site editor.
+        </p>
+      </div>
+    </aside>
+  );
+}
+
+function NavLinks({ items, pathname, onClose }: { items: NavItem[]; pathname: string; onClose?: () => void }) {
   return (
     <ul className="space-y-0.5">
       {items.map((item) => {
@@ -37,9 +82,10 @@ function NavLinks({ items, pathname }: { items: NavItem[]; pathname: string }) {
           <li key={item.href}>
             <Link
               href={item.href}
+              onClick={onClose}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? "bg-zinc-900 text-white font-medium"
+                  ? "bg-zinc-900 text-white font-medium shadow-sm"
                   : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
               }`}
             >
@@ -59,41 +105,5 @@ function NavLinks({ items, pathname }: { items: NavItem[]; pathname: string }) {
         );
       })}
     </ul>
-  );
-}
-
-export default function AdminSidebar() {
-  const pathname = usePathname();
-
-  return (
-    <aside className="w-56 shrink-0 border-r border-zinc-200 bg-white flex flex-col h-full">
-      {/* Brand */}
-      <div className="px-5 py-5 border-b border-zinc-100">
-        <p className="text-[10px] tracking-[0.18em] uppercase text-zinc-400">
-          Bord Cadre Films
-        </p>
-        <p className="text-sm font-semibold text-zinc-900 mt-0.5">Content Manager</p>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5">
-        <div>
-          <NavLinks items={NAV} pathname={pathname} />
-        </div>
-        <div>
-          <p className="px-3 mb-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">
-            Coming soon
-          </p>
-          <NavLinks items={PREVIEW_NAV} pathname={pathname} />
-        </div>
-      </nav>
-
-      {/* Help hint */}
-      <div className="px-5 py-4 border-t border-zinc-100">
-        <p className="text-[11px] text-zinc-500 leading-relaxed">
-          Need help? Contact your site editor.
-        </p>
-      </div>
-    </aside>
   );
 }

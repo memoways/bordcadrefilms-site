@@ -87,3 +87,7 @@ perf-*.json
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# crash dumps / archives
+bash.exe.stackdump
+public/Logos.zip

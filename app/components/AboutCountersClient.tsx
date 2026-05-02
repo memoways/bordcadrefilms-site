@@ -22,7 +22,7 @@ export default function AboutCountersClient({ numbers }: { numbers: BCFNumbersDa
         <div className="flex-1 flex flex-col gap-10">
 
           {/* First 2 — prominent, always side-by-side */}
-          <div className="grid grid-cols-2 gap-x-8 sm:gap-x-14">
+          <div className="grid grid-cols-2 gap-x-2">
             {featured.map((item) => (
               <div key={item.order} className="flex flex-col gap-2">
                 <span className="text-[3rem] sm:text-[4rem] font-sans font-medium text-[#E0A75D] leading-none tabular-nums">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -74,108 +74,136 @@ function SortableRow({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`bg-white border border-zinc-200 rounded-xl overflow-hidden transition-shadow ${isDragging ? "shadow-2xl opacity-80 z-50" : ""}`}
+      className={`bg-white border rounded-xl overflow-hidden transition-all duration-200 ${
+        isDragging ? "shadow-2xl opacity-80 z-50" : "shadow-xs"
+      } ${
+        expanded
+          ? "col-span-full shadow-lg border-zinc-300 ring-1 ring-zinc-200"
+          : "hover:shadow-md border-zinc-200"
+      }`}
     >
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className={`flex items-center gap-3 px-4 py-3 ${expanded ? "bg-zinc-50/50 border-b border-zinc-100" : ""}`}>
         <button
           {...attributes}
           {...listeners}
-          className="text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing touch-none"
+          className="text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 transition-colors"
           aria-label="Drag to reorder"
         >
           ⠿
         </button>
 
-        <div className="w-8 h-8 shrink-0 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600">
+        <div className="w-10 h-10 shrink-0 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600 border border-zinc-200 shadow-xs">
           <SocialIcon platform={currentPlatform} size={20} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-zinc-900 truncate">{displayLabel}</p>
-          <p className="text-xs text-zinc-400 truncate">{item.url || "— no URL set"}</p>
+          <p className="text-sm font-semibold text-zinc-900 truncate">{displayLabel}</p>
+          <p className="text-xs text-zinc-400 truncate font-medium">{item.url || "— no URL set"}</p>
         </div>
 
-        <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={item.publish}
-            onChange={() => onTogglePublish(item)}
-            className="w-4 h-4 accent-zinc-900"
-          />
-          <span>{item.publish ? "Visible" : "Hidden"}</span>
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-xs font-medium text-zinc-500 cursor-pointer select-none group">
+            <input
+              type="checkbox"
+              checked={item.publish}
+              onChange={() => onTogglePublish(item)}
+              className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 transition-colors"
+            />
+            <span className="group-hover:text-zinc-700 transition-colors">{item.publish ? "Visible" : "Hidden"}</span>
+          </label>
 
-        <button
-          onClick={onExpand}
-          className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:border-zinc-400 transition-colors"
-        >
-          {expanded ? "Close" : "Edit"}
-        </button>
-        <button
-          onClick={() => onDelete(item.id)}
-          disabled={deleting}
-          className="text-xs px-2 py-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
-        >
-          {deleting ? "…" : "✕"}
-        </button>
+          <button
+            onClick={onExpand}
+            className={`text-xs px-4 py-1.5 rounded-lg border font-medium transition-all ${
+              expanded
+                ? "bg-zinc-900 text-white border-zinc-900 shadow-sm"
+                : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50"
+            }`}
+          >
+            {expanded ? "Close" : "Edit"}
+          </button>
+          
+          <button
+            onClick={() => onDelete(item.id)}
+            disabled={deleting}
+            className="text-xs p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+            title="Delete link"
+          >
+            {deleting ? "…" : "✕"}
+          </button>
+        </div>
       </div>
 
       {expanded && (
-        <div className="border-t border-zinc-100 px-4 py-4 space-y-4 bg-zinc-50">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">
-                Platform
-              </label>
-              <select
-                value={draft.platform}
-                onChange={(e) => {
-                  const next = normalizePlatform(e.target.value);
-                  setDraft((d) => ({
-                    ...d,
-                    platform: next,
-                    label: d.label || platformLabel(next),
-                  }));
-                }}
-                className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
-              >
-                {PLATFORM_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+        <div className="px-6 py-6 bg-white">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-8 gap-y-6">
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">
+                    Platform
+                  </label>
+                  <select
+                    value={draft.platform}
+                    onChange={(e) => {
+                      const next = normalizePlatform(e.target.value);
+                      setDraft((d) => ({
+                        ...d,
+                        platform: next,
+                        label: d.label || platformLabel(next),
+                      }));
+                    }}
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white transition-all"
+                  >
+                    {PLATFORM_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <AdminField
+                  label="Label (shown as aria-label)"
+                  value={draft.label}
+                  onChange={(v) => setDraft((d) => ({ ...d, label: v }))}
+                  placeholder="e.g. YouTube, Our LinkedIn"
+                />
+              </div>
+              <AdminField
+                label="URL"
+                value={draft.url}
+                onChange={(v) => setDraft((d) => ({ ...d, url: v }))}
+                placeholder="https://instagram.com/bordcadrefilms"
+              />
             </div>
-            <AdminField
-              label="Label (shown as aria-label)"
-              value={draft.label}
-              onChange={(v) => setDraft((d) => ({ ...d, label: v }))}
-              placeholder="e.g. YouTube, Our LinkedIn"
-            />
+
+            <div className="space-y-4">
+              <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+                <label className="flex items-center gap-3 text-sm font-semibold text-zinc-900 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={draft.publish}
+                    onChange={(e) => setDraft((d) => ({ ...d, publish: e.target.checked }))}
+                    className="w-5 h-5 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
+                  />
+                  <div>
+                    <p>Publish this link</p>
+                    <p className="text-xs text-zinc-500 font-normal mt-0.5">
+                      Only published links appear in the website footer.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
           </div>
-          <AdminField
-            label="URL"
-            value={draft.url}
-            onChange={(v) => setDraft((d) => ({ ...d, url: v }))}
-            placeholder="https://instagram.com/bordcadrefilms"
-          />
-          <label className="flex items-center gap-2 text-sm text-zinc-700">
-            <input
-              type="checkbox"
-              checked={draft.publish}
-              onChange={(e) => setDraft((d) => ({ ...d, publish: e.target.checked }))}
-              className="w-4 h-4 accent-zinc-900"
-            />
-            Publish this link
-          </label>
-          <p className="text-xs text-zinc-500">Only published links appear in the footer.</p>
-          <div className="flex justify-end">
+
+          <div className="flex justify-end pt-6 mt-8 border-t border-zinc-100">
             <button
               onClick={() => onSave(draft)}
               disabled={saving}
-              className="px-4 py-1.5 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+              className="px-6 py-2 text-sm font-semibold bg-zinc-900 text-white rounded-xl hover:bg-zinc-700 disabled:opacity-50 transition-all shadow-sm active:scale-[0.98]"
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? "Saving…" : "Save changes"}
             </button>
           </div>
         </div>
@@ -185,6 +213,7 @@ function SortableRow({
 }
 
 export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
+  const [mounted, setMounted] = useState(false);
   const [items, setItems] = useState<SocialRow[]>(initialItems);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -193,10 +222,16 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const dismiss = useCallback(() => setToast(null), []);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  if (!mounted) return <div className="p-8 text-zinc-400 animate-pulse">Loading links...</div>;
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -313,7 +348,7 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900">Social media</h1>
@@ -324,21 +359,21 @@ export function SocialClient({ initialItems }: { initialItems: SocialRow[] }) {
         <button
           onClick={addItem}
           disabled={adding}
-          className="shrink-0 px-4 py-2 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+          className="px-4 py-2 text-sm font-semibold bg-zinc-900 text-white rounded-xl hover:bg-zinc-700 disabled:opacity-50 transition-all shadow-sm flex items-center gap-2"
         >
-          {adding ? "Adding…" : "+ Add link"}
+          {adding ? "Adding…" : <><span className="text-lg leading-none">+</span> Add Link</>}
         </button>
       </div>
 
       {items.length === 0 && (
-        <div className="text-center py-16 text-zinc-400 text-sm border border-dashed border-zinc-200 rounded-xl">
+        <div className="text-center py-20 text-zinc-400 text-sm border-2 border-dashed border-zinc-200 rounded-2xl bg-white">
           No social links yet. Click &quot;Add link&quot; to add one.
         </div>
       )}
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((m) => m.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
             {items.map((m) => (
               <SortableRow
                 key={m.id}

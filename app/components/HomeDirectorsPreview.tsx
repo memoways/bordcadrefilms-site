@@ -11,7 +11,7 @@ export default async function HomeDirectorsPreview() {
         <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-zinc-900">Directors</h2>
         <DirectorGrid directors={directors} limit={10} />
         <div className="flex justify-center mt-4">
-          <Link href="/directors" prefetch className="px-6 py-2 rounded brand-btn-secondary font-normal transition">
+          <Link href="/directors" prefetch className="px-6 py-2 rounded-lg brand-btn-primary font-normal transition-all duration-150 shadow-sm">
             View all directors
           </Link>
         </div>

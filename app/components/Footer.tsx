@@ -30,12 +30,13 @@ export default async function Footer() {
 
           {/* Col 1 — Brand + contact */}
           <div>
-            <p className="font-bold text-sm uppercase tracking-widest mb-4">
+            <p className="font-bold text-sm tracking-widest mb-4">
               Bord Cadre films
             </p>
             <address className="not-italic text-white/70 text-sm leading-relaxed mb-6">
-              CP 5353<br />
-              1211 Genève 11
+              8 rue de la Coulouvrenière
+              <br />
+              1204 Genève
             </address>
 
             <ul className="space-y-3 text-sm">
