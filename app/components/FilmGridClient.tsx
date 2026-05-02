@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { type Film } from "../lib/airtable";
-import FilmCardFixed from "./FilmCard";
+import FilmCard from "./FilmCard";
 import FilmFilters, { type FilmFilterValues } from "./FilmFilters";
 
 const PAGE_SIZE = 12;
@@ -16,7 +16,7 @@ function splitMultiValue(value?: string): string[] {
 
 const EMPTY_FILTERS: FilmFilterValues = { year: "", genre: "", country: "" };
 
-export default function FilmGridClientFixed({
+export default function FilmGridClient({
   films,
   limit,
   initialSearch = "",
@@ -128,61 +128,69 @@ export default function FilmGridClientFixed({
   );
 
   const hasMore = !limit && filtered.length > visibleCount;
+  const hasActiveControls = Boolean(
+    search.trim() || filters.year || filters.genre || filters.country,
+  );
+
+  const resetControls = () => {
+    setSearch("");
+    handleFiltersChange(EMPTY_FILTERS);
+  };
 
   return (
     <div className="w-full">
       {!limit && (
-        <div className="mb-10 rounded-2xl border border-zinc-200 bg-linear-to-b from-white to-zinc-50/70 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.45)] sm:p-6 transition-all duration-300">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-              Search and filters
-            </p>
-            <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-600">
-              {filtered.length} result{filtered.length > 1 ? "s" : ""}
-            </span>
-          </div>
-
-          <div className="relative mb-5">
-            <span
-              className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-zinc-400"
-              aria-hidden="true"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
+        <div className="mb-7 rounded-lg border border-zinc-200 bg-zinc-50/70 px-3 py-3">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+            <div className="relative min-w-0 flex-1">
+              <span
+                className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400"
+                aria-hidden="true"
               >
-                <circle cx="11" cy="11" r="7" />
-                <path d="m20 20-3.5-3.5" strokeLinecap="round" />
-              </svg>
-            </span>
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Search a film, a director, a genre..."
-              className="w-full rounded-xl border border-zinc-300 bg-white py-3 pl-12 pr-12 text-zinc-900 shadow-[0_1px_0_0_rgba(0,0,0,0.02)] placeholder:text-zinc-500 transition-all duration-200 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => handleSearchChange("")}
-                className="absolute inset-y-0 right-3 my-auto h-10 rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" strokeLinecap="round" />
+                </svg>
+              </span>
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder="Search films"
+                className="h-9 w-full rounded-md border border-zinc-200 bg-white pl-9 pr-3 text-sm text-zinc-900 shadow-none placeholder:text-zinc-400 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+              />
+            </div>
 
-          <FilmFilters
-            years={years}
-            genres={genres}
-            countries={countries}
-            values={filters}
-            onChange={handleFiltersChange}
-          />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">
+              <FilmFilters
+                years={years}
+                genres={genres}
+                countries={countries}
+                values={filters}
+                onChange={handleFiltersChange}
+              />
+              <div className="flex items-center justify-between gap-3 sm:justify-start">
+                <span className="whitespace-nowrap text-xs text-zinc-500">
+                  {filtered.length} result{filtered.length > 1 ? "s" : ""}
+                </span>
+                {hasActiveControls && (
+                  <button
+                    type="button"
+                    onClick={resetControls}
+                    className="h-8 rounded-md px-2 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -190,7 +198,7 @@ export default function FilmGridClientFixed({
         <>
           <section className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 w-full">
             {displayed.map((film, idx) => (
-              <FilmCardFixed
+              <FilmCard
                 key={film.slug || film.title || idx}
                 film={film}
                 priority={limit ? idx < limit : idx < PAGE_SIZE}

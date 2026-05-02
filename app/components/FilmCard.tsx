@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { filmImageUrl, getValidImageUrl, slugify } from "../lib/utils";
 import type { Film } from "../lib/airtable";
-import SmartImageFixed from "./SmartImage";
+import SmartImage from "./SmartImage";
 
-export default function FilmCardFixed({ film, priority = false }: { film: Film; priority?: boolean }) {
+export default function FilmCard({ film, priority = false }: { film: Film; priority?: boolean }) {
   // Always generate a fallback slug from title if missing
   const filmSlug = film.slug || (film.title ? slugify(film.title) : undefined);
   const filmUrl = filmSlug ? `/films/${filmSlug}` : undefined;
@@ -18,7 +18,7 @@ export default function FilmCardFixed({ film, priority = false }: { film: Film; 
     >
       <div className="overflow-hidden relative w-full aspect-2/3 bg-zinc-100">
         {imgUrl ? (
-          <SmartImageFixed
+          <SmartImage
             key={imgUrl}
             src={imgUrl}
             alt={altText}
@@ -33,9 +33,19 @@ export default function FilmCardFixed({ film, priority = false }: { film: Film; 
           <div className="w-full h-full flex items-center justify-center text-zinc-500">No image</div>
         )}
       </div>
-      <div className="p-3 flex-1 flex flex-col gap-1">
-        <h2 className="text-base font-medium text-zinc-900 mb-0.5 truncate" title={film.title}>{film.title}</h2>
-        <p className="text-zinc-500 text-sm font-light truncate">{film.director || ""}</p>
+      <div className="p-3 flex-1 flex flex-col gap-0.5">
+        <h2 className="text-base font-medium text-zinc-900 mb-0" title={film.title}>{film.title}</h2>
+        <div className="flex flex-col gap-0">
+          {(film.originalTitle && film.originalTitle !== film.title) && (
+            <p className="text-red-600 text-[10px] uppercase font-bold tracking-wider leading-tight truncate">
+              {film.originalTitle}
+            </p>
+          )}
+          <p className="text-zinc-500 text-sm font-light truncate">
+            {film.director || ""}
+            {film.country && <span className="text-zinc-400 text-xs ml-1.5 border-l border-zinc-200 pl-1.5">{film.country}</span>}
+          </p>
+        </div>
       </div>
     </article>
   );

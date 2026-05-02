@@ -1,7 +1,7 @@
 import { type Film } from "../lib/airtable";
 import FilmGridClient from "./FilmGridClient";
 
-export default function FilmGridFixed({ films, limit, initialSearch }: { films: Film[]; limit?: number; initialSearch?: string }) {
+export default function FilmGrid({ films, limit, initialSearch }: { films: Film[]; limit?: number; initialSearch?: string }) {
   if (!films || films.length === 0) {
     return (
       <div className="w-full rounded-2xl border border-zinc-200 bg-white p-10 text-center shadow-[0_10px_28px_-22px_rgba(0,0,0,0.45)]">

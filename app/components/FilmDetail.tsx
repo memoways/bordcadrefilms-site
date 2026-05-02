@@ -64,38 +64,12 @@ function parseFilmographyEntries(value?: string): FilmographyEntry[] {
     .sort((a, b) => (b.year ?? -1) - (a.year ?? -1));
 }
 
-// Parse CrewComplete string: "Role: value | Role: value | ..."
-function parseCrew(raw?: string): Record<string, string> {
-  if (!raw) return {};
-  const result: Record<string, string> = {};
-  raw.split("|").forEach((segment) => {
-    const colon = segment.indexOf(":");
-    if (colon < 0) return;
-    const key = segment.slice(0, colon).trim();
-    const val = segment.slice(colon + 1).trim().replace(/,\s*$/, "").trim();
-    if (key && val) result[key] = val;
-  });
-  return result;
-}
-
-// Extract quote text and optional author (format: "quote text" — Author, Source)
-function parseQuote(raw?: string): { text: string; author?: string } | null {
-  if (!raw) return null;
-  const text = raw.trim();
-  if (!text) return null;
-  // Try to split author after em-dash or last "—"
-  const dashIdx = text.lastIndexOf("—");
-  if (dashIdx > 0) {
-    return {
-      text: text.slice(0, dashIdx).trim().replace(/^["«]|["»]$/g, ""),
-      author: text.slice(dashIdx + 1).trim(),
-    };
-  }
-  return { text: text.replace(/^["«]|["»]$/g, "") };
-}
-
 export default function FilmDetail({ film }: { film: Film }) {
-  const title = film.title || "";
+  const englishTitle = film.title || "";
+  const title = film.originalTitle || englishTitle;
+  const titleSubtitle = film.originalTitle && englishTitle && film.originalTitle !== englishTitle
+    ? englishTitle
+    : "";
   const directorName = film.director || "";
   const filmYear = film.year || "";
   const filmCountry = film.country || "";
@@ -104,15 +78,9 @@ export default function FilmDetail({ film }: { film: Film }) {
   const filmDuration = formatDurationLabel(film.duration);
   const posterUrl = filmImageUrl(film.slug, "poster", getValidImageUrl(film.poster));
   const directorImageUrl = filmImageUrl(film.slug, "profile", getValidImageUrl(film.profilePicture));
-  const tagline = film.tagline || "";
   const synopsis = film.synopsis || "";
   const directorWordsEnglish = film.directorWordsEnglish || "";
   const filmography = film.directorFilmography || "";
-  const crew = parseCrew(film.crewComplete);
-  const production = film.production || [];
-  const coproduction = film.coproduction || [];
-  const premiereDate = film.premiereDate || "";
-  const mainUrl = safeExternalUrl(film.mainUrl) ?? "";
   const genres = splitList(film.genres);
   const awardsList = splitAwards(filmAwards);
   const recentFilmography = parseFilmographyEntries(filmography)
@@ -120,9 +88,6 @@ export default function FilmDetail({ film }: { film: Film }) {
     .slice(0, 3);
   const hasAwards = awardsList.length > 0;
   const festivalLogoUrl = filmImageUrl(film.slug, "festival", getValidImageUrl(film.festivalLogoUrl));
-  const quote = parseQuote(film.quoteEN || film.quoteFR);
-  const heroQuoteText = quote?.text || tagline;
-  const heroQuoteAuthor = quote?.author;
   const directorFilmsHref = directorName
     ? `/films?director=${encodeURIComponent(directorName)}`
     : "/films";
@@ -144,10 +109,16 @@ export default function FilmDetail({ film }: { film: Film }) {
   const pressKitUrl = safeExternalUrl(film.pressKitUrl);
   const hasPressBlock = pressArticles.length > 0 || Boolean(pressKitUrl);
 
-  const hasCastCrew = !!(crew['Stars'] || crew['Cinematography'] || crew['Editor'] || crew['Music'] || crew['Sound Design'] || crew['Sound'] || crew['Producers']);
-  const hasProductionBlock = production.length > 0 || coproduction.length > 0 || !!crew['World sales'];
-  const hasTechBlock = !!(filmCountry || premiereDate || filmDuration || filmImdb || mainUrl);
-  const hasInfoBox = hasCastCrew || hasProductionBlock || hasTechBlock;
+  const detailRows = [
+    { label: "Screenplay", value: film.crewDetails?.screenplay },
+    { label: "Cinematography", value: film.crewDetails?.cinematography },
+    { label: "Sound", value: film.crewDetails?.sound },
+    { label: "Edit", value: film.crewDetails?.edit },
+    { label: "Music", value: film.crewDetails?.music },
+    { label: "Cast", value: film.crewDetails?.cast },
+    { label: "Production Company", value: film.crewDetails?.productionCompany },
+  ].filter((row): row is { label: string; value: string } => Boolean(row.value));
+  const hasInfoBox = detailRows.length > 0 || Boolean(filmImdb);
   const hasMainGrid = videos.length > 0 || hasPressBlock || synopsis || hasInfoBox;
 
   const galleryImages = (Array.isArray(film.images) ? film.images : [])
@@ -165,7 +136,7 @@ export default function FilmDetail({ film }: { film: Film }) {
     filmYear,
     filmDuration ? `${filmDuration}` : "",
   ].filter(Boolean);
-console.log(metaParts)
+
   return (
     <div className="w-full min-h-screen overflow-x-hidden bg-zinc-50">
 
@@ -190,37 +161,33 @@ console.log(metaParts)
           <div className={`grid gap-8 lg:items-start lg:gap-6 xl:gap-8 ${heroGridClass}`}>
             <div className="flex min-w-0 w-full max-w-none flex-col gap-5 sm:gap-6">
               <div className="space-y-3 sm:space-y-4">
-                <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl md:text-5xl lg:leading-[1.05]">{title}</h1>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl md:text-5xl lg:leading-[1.05]">{title}</h1>
+                  {titleSubtitle && (
+                    <p className="text-base text-white/70 md:text-lg">{titleSubtitle}</p>
+                  )}
+                </div>
                 {directorName && (
                   <p className="text-base text-white/80 md:text-lg">
-                    Directed by <span className="underline decoration-white/30 decoration-1 underline-offset-4">{directorName}</span>
+                    directed by <span className="underline decoration-white/30 decoration-1 underline-offset-4">{directorName}</span>
                   </p>
                 )}
                 {metaParts.length > 0 && <p className="text-sm tracking-wide text-white/60">{metaParts.join("  |  ")}</p>  }
               </div>
 
-              {genres.length > 0 && (
-                <div className="flex flex-wrap gap-2.5">
-                  {genres.map((genre) => (
-                    <span
-                      key={genre}
-                      className="rounded-md border border-[#E0A75D]/45 bg-[#E0A75D]/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-[#F6DCA0]"
-                    >
-                      {genre}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {heroQuoteText && (
-                <div className="max-w-2xl border-l-2 border-[#E0A75D] pl-4 sm:pl-5">
-                  <p className="text-sm italic leading-relaxed text-white/90 sm:text-base lg:line-clamp-7">
-                    {heroQuoteText}
-                  </p>
-                  {heroQuoteAuthor && <p className="mt-2 text-sm font-semibold text-[#E0A75D]">{heroQuoteAuthor}</p>}
-                </div>
-              )}
-            </div>
+                {genres.length > 0 && (
+                  <div className="flex flex-wrap gap-2.5">
+                    {genres.map((genre) => (
+                      <span
+                        key={genre}
+                        className="rounded-md border border-[#E0A75D]/45 bg-[#E0A75D]/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-[#F6DCA0]"
+                      >
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
             {hasAwards && (
               <aside className="mx-auto w-full max-w-75 self-start rounded-3xl border border-[#E0A75D]/70 bg-[#171717] p-5 shadow-[0_28px_70px_-42px_rgba(0,0,0,0.8)] sm:p-6 lg:mr-0 lg:p-7">
@@ -236,7 +203,6 @@ console.log(metaParts)
                         fill
                         sizes="80px"
                         className="object-contain"
-                        style={{ filter: "brightness(0) invert(1)" }}
                         skeletonClassName="bg-white/10 rounded-full"
                       />
                     </div>
@@ -287,103 +253,39 @@ console.log(metaParts)
               </div>
             )}
 
-            {/* Right column: Synopsis + Cast/Crew/Production/Tech */}
+            {/* Right column: Synopsis + details */}
             {(synopsis || hasInfoBox) && (
               <div className="w-full max-w-4xl space-y-8 lg:col-start-2">
                 {synopsis && (
                   <div>
                     <h3 className="mb-3 border-b border-zinc-200 pb-2 text-xl font-bold text-zinc-900">Synopsis</h3>
                     <p className="leading-relaxed text-zinc-700">{synopsis}</p>
-                    {filmImdb && (
-                      <p className="mt-4 text-sm text-zinc-500">
-                        Official website{" "}
-                        <a href={filmImdb} target="_blank" rel="noreferrer" className="text-[#E0A75D] underline underline-offset-2">
-                          {filmImdb}
-                        </a>
-                      </p>
-                    )}
                   </div>
                 )}
 
                 {hasInfoBox && (
-                  <div className="space-y-8 rounded-2xl bg-[#F4F4F4] p-5 sm:p-6 md:space-y-9 md:p-8">
-                    {hasCastCrew && (
-                      <div>
-                        <h3 className="mb-4 flex items-center gap-3 text-lg font-bold text-zinc-900">
-                          <span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
-                          Cast &amp; Crew
-                        </h3>
-                        <dl className="space-y-1.5 text-sm text-zinc-700">
-                          {crew['Stars'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Cast:</dt><dd>{crew['Stars']}</dd></div>}
-                          {crew['Cinematography'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Cinematography:</dt><dd>{crew['Cinematography']}</dd></div>}
-                          {(crew['Sound Design'] || crew['Sound']) && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Sound:</dt><dd>{crew['Sound Design'] || crew['Sound']}</dd></div>}
-                          {crew['Editor'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Editor:</dt><dd>{crew['Editor']}</dd></div>}
-                          {crew['Music'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Music:</dt><dd>{crew['Music']}</dd></div>}
-                          {crew['Producers'] && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Producers:</dt><dd>{crew['Producers']}</dd></div>}
-                        </dl>
-                      </div>
-                    )}
-
-                    {hasProductionBlock && (
-                      <div>
-                        <h3 className="mb-4 flex items-center gap-3 text-lg font-bold text-zinc-900">
-                          <span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
-                          Production &amp; Distribution
-                        </h3>
-                        <dl className="space-y-1.5 text-sm text-zinc-700">
-                          {production.length > 0 && (
-                            <div className="flex gap-1">
-                              <dt className="font-semibold text-zinc-900 shrink-0">Production:</dt>
-                              <dd>{production.join(", ")}</dd>
-                            </div>
-                          )}
-                          {coproduction.length > 0 && (
-                            <div className="flex gap-1">
-                              <dt className="font-semibold text-zinc-900 shrink-0">Co-production:</dt>
-                              <dd>{coproduction.join(", ")}</dd>
-                            </div>
-                          )}
-                          {crew['World sales'] && (
-                            <div className="flex gap-1">
-                              <dt className="font-semibold text-zinc-900 shrink-0">World sales:</dt>
-                              <dd>{crew['World sales']}</dd>
-                            </div>
-                          )}
-                        </dl>
-                      </div>
-                    )}
-
-                    {hasTechBlock && (
-                      <div>
-                        <h3 className="mb-4 flex items-center gap-3 text-lg font-bold text-zinc-900">
-                          <span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
-                          Technical details
-                        </h3>
-                        <dl className="space-y-1.5 text-sm text-zinc-700">
-                          {filmCountry && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Country:</dt><dd>{filmCountry}</dd></div>}
-                          {premiereDate && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Premiere:</dt><dd>{premiereDate}</dd></div>}
-                          {filmDuration && <div className="flex gap-1"><dt className="font-semibold text-zinc-900 shrink-0">Duration:</dt><dd>{filmDuration}</dd></div>}
-                        </dl>
-                        {(mainUrl || filmImdb) && (
-                          <div className="mt-4 flex items-center gap-3">
-                            {mainUrl && (
-                              <a href={mainUrl} target="_blank" rel="noreferrer" className="text-sm text-zinc-500 underline underline-offset-2 hover:text-zinc-800">
-                                More information
-                              </a>
-                            )}
-                            {filmImdb && (
-                              <a
-                                href={filmImdb}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="rounded px-2 py-0.5 text-xs font-bold text-black"
-                                style={{ backgroundColor: "#F5C518" }}
-                              >
-                                IMDb
-                              </a>
-                            )}
+                  <div className="rounded-2xl bg-[#F4F4F4] p-5 sm:p-6 md:p-8">
+                    {detailRows.length > 0 && (
+                      <dl className="space-y-1.5 text-sm text-zinc-700">
+                        {detailRows.map((row) => (
+                          <div key={row.label} className="flex gap-1">
+                            <dt className="shrink-0 font-semibold text-zinc-900">{row.label}:</dt>
+                            <dd>{row.value}</dd>
                           </div>
-                        )}
+                        ))}
+                      </dl>
+                    )}
+                    {filmImdb && (
+                      <div className={detailRows.length > 0 ? "mt-5" : ""}>
+                        <a
+                          href={filmImdb}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex rounded px-3 py-1 text-sm font-bold text-black"
+                          style={{ backgroundColor: "#F5C518" }}
+                        >
+                          IMDb
+                        </a>
                       </div>
                     )}
                   </div>

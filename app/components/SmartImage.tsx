@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 const RETRY_DELAYS_MS = [800, 2000, 5000];
 
-type SmartImageFixedProps = Omit<
+type SmartImageProps = Omit<
   ImageProps,
   "onLoad" | "onError" | "onLoadingComplete"
 > & {
@@ -13,14 +13,14 @@ type SmartImageFixedProps = Omit<
   unoptimized?: boolean;
 };
 
-export default function SmartImageFixed({
+export default function SmartImage({
   src,
   alt,
   className,
   skeletonClassName,
   unoptimized,
   ...rest
-}: SmartImageFixedProps) {
+}: SmartImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);

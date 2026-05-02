@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import SmartImage from "../../components/SmartImage";
-import { getFilms } from "../../lib/catalog";
+import { fetchAirtableRecords, type AirtableRecord } from "../../lib/airtable";
 import { getValidImageUrl, slugify } from "../../lib/utils";
 
 export const revalidate = 900;
@@ -13,8 +13,65 @@ type DirectorDetail = {
 	bio?: string;
 	profilePicture?: string;
 	origin?: string;
-	films: Array<{ slug: string; title: string; year?: string; poster?: string }>;
+	films: Array<{ slug: string; originalTitle: string; englishTitle?: string }>;
 };
+
+const PRIMARY_MOVIE_FIELDS = [
+	"title",
+	"Movie title",
+	"Original Title",
+	"Director (Lookup)",
+	"Director (People Table)",
+	"Director",
+	"Director Bio EN",
+	"Director Bio FR",
+	"bio",
+	"Director profile picture",
+	"Origine_FR (from People) (from Credits)",
+];
+
+const MIRROR_MOVIE_FIELDS = [
+	"Movie title",
+	"Original Title",
+	"Director",
+	"Director from credits",
+	"Director Bio EN",
+	"Director Bio FR",
+	"Profile pictures",
+	"Origine_FR (from People) (from Credits)",
+];
+
+function fieldText(value: unknown): string | undefined {
+	if (typeof value === "string") return value.trim() || undefined;
+	if (typeof value === "number" || typeof value === "boolean") return String(value);
+	if (Array.isArray(value)) {
+		for (const item of value) {
+			const text = fieldText(item);
+			if (text) return text;
+		}
+	}
+	if (typeof value === "object" && value !== null) {
+		const record = value as { name?: unknown; value?: unknown; text?: unknown; title?: unknown };
+		return fieldText(record.name ?? record.value ?? record.text ?? record.title);
+	}
+	return undefined;
+}
+
+function firstField(fields: Record<string, unknown>, names: string[]): string | undefined {
+	for (const name of names) {
+		const value = fieldText(fields[name]);
+		if (value) return value;
+	}
+	return undefined;
+}
+
+function imageField(fields: Record<string, unknown>, names: string[]): string | undefined {
+	for (const name of names) {
+		const value = getValidImageUrl(fields[name]);
+		if (value) return value;
+	}
+	return undefined;
+}
 
 function parseOrigin(country?: string): string | undefined {
 	if (!country) return undefined;
@@ -25,44 +82,77 @@ function parseOrigin(country?: string): string | undefined {
 	return parts[0] || undefined;
 }
 
-async function getDirectorBySlug(slug: string): Promise<DirectorDetail | undefined> {
-	const films = await getFilms();
+async function getDirectorMovieRecords(): Promise<AirtableRecord[]> {
+	const cmsBaseId = process.env.AIRTABLE_CMS_BASE_ID;
 
-	const relatedFilms = films.filter((film) => {
-		const directorName = film.director?.trim();
+	if (cmsBaseId) {
+		try {
+			return await fetchAirtableRecords("Sync - Movie", MIRROR_MOVIE_FIELDS, null, {
+				baseId: cmsBaseId,
+			});
+		} catch (error) {
+			console.error("[Airtable] Sync - Movie director fetch failed, falling back to primary movie table:", error);
+		}
+	}
+
+	return fetchAirtableRecords(process.env.AIRTABLE_TABLE_NAME!, PRIMARY_MOVIE_FIELDS);
+}
+
+function directorNameFromRecord(record: AirtableRecord): string | undefined {
+	return firstField(record.fields, [
+		"Director",
+		"Director (Lookup)",
+		"Director (People Table)",
+		"Director from credits",
+	]);
+}
+
+function filmFromRecord(record: AirtableRecord, fallbackIndex: number) {
+	const englishTitle = firstField(record.fields, ["Movie title", "title"]);
+	const originalTitle = firstField(record.fields, ["Original Title"]) || englishTitle || `Film ${fallbackIndex + 1}`;
+
+	return {
+		slug: slugify(englishTitle || originalTitle) || `film-${fallbackIndex}`,
+		originalTitle,
+		englishTitle: englishTitle && englishTitle !== originalTitle ? englishTitle : undefined,
+	};
+}
+
+async function getDirectorBySlug(slug: string): Promise<DirectorDetail | undefined> {
+	const records = await getDirectorMovieRecords();
+
+	const relatedRecords = records.filter((record) => {
+		const directorName = directorNameFromRecord(record)?.trim();
 		return directorName ? slugify(directorName) === slug : false;
 	});
 
-	if (relatedFilms.length === 0) return undefined;
+	if (relatedRecords.length === 0) return undefined;
 
-	const primary = relatedFilms[0];
-	const name = primary.director?.trim() || "";
+	const primary = relatedRecords[0];
+	const name = directorNameFromRecord(primary)?.trim() || "";
 
 	if (!name) return undefined;
+
+	const films = relatedRecords
+		.map((record, index) => filmFromRecord(record, index))
+		.sort((a, b) => a.originalTitle.localeCompare(b.originalTitle));
 
 	return {
 		slug,
 		name,
-		bio: primary.bio,
-		profilePicture: getValidImageUrl(primary.profilePicture),
-		origin: parseOrigin(primary.country),
-		films: relatedFilms
-			.map((film) => ({
-				slug: film.slug,
-				title: film.title,
-				year: film.year,
-				poster: getValidImageUrl(film.poster) || getValidImageUrl(film.images?.[0]),
-			}))
-			.sort((a, b) => Number(b.year || 0) - Number(a.year || 0)),
+		bio: firstField(primary.fields, ["Director Bio EN", "bio", "Director Bio FR"]),
+		profilePicture: imageField(primary.fields, ["Profile pictures", "Director profile picture"]),
+		origin: parseOrigin(firstField(primary.fields, ["Origine_FR (from People) (from Credits)"])),
+		films,
 	};
 }
 
 export async function generateStaticParams() {
-	const films = await getFilms();
+	const records = await getDirectorMovieRecords();
 	const unique = new Map<string, string>();
 
-	for (const film of films) {
-		const name = film.director?.trim();
+	for (const record of records) {
+		const name = directorNameFromRecord(record)?.trim();
 		if (!name) continue;
 		const key = slugify(name);
 		if (!unique.has(key)) unique.set(key, name);
@@ -94,11 +184,6 @@ export default async function DirectorDetailPage({
 	const director = await getDirectorBySlug(slug);
 
 	if (!director) return notFound();
-
-	const latestEntries = director.films.slice(0, 3).map((film) => ({
-		...film,
-		description: director.bio,
-	}));
 
 	return (
 		<main className="min-h-screen bg-zinc-50 text-zinc-900">
@@ -143,63 +228,23 @@ export default async function DirectorDetailPage({
 				</div>
 			</section>
 
-			<section className="bg-[#ECECEC]">
+			<section className="bg-[#DEDEDE]">
 				<div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:px-8 lg:py-12">
-					<div className="mb-8 text-center">
-						<p className="text-base text-zinc-500">Latest</p>
-						<div className="mt-1 flex items-center justify-center gap-6">
-							<span className="h-px w-24 bg-accent sm:w-40 lg:w-60" />
-							<h2 className="text-4xl font-light text-zinc-900">News</h2>
-							<span className="h-px w-24 bg-accent sm:w-40 lg:w-60" />
-						</div>
-					</div>
-
-					<div className="space-y-4">
-						{latestEntries.map((entry) => (
-							<article
-								key={entry.slug}
-								className="border-b border-zinc-300 pb-4 last:border-b-0 last:pb-0"
-							>
-								<Link
-									href={`/films/${entry.slug}`}
-									className="grid gap-4 sm:grid-cols-[190px_minmax(0,1fr)] sm:items-start"
-								>
-									<div className="relative aspect-[16/9] overflow-hidden rounded-lg border border-zinc-300 bg-zinc-900">
-										{entry.poster ? (
-											<SmartImage
-												src={entry.poster}
-												alt={entry.title}
-												fill
-												className="object-cover"
-												sizes="(max-width: 639px) 100vw, 190px"
-												skeletonClassName="bg-zinc-900"
-											/>
-										) : (
-											<div className="flex h-full w-full items-center justify-center text-xs text-zinc-300">
-												No image
-											</div>
-										)}
-									</div>
-
-									<div className="pt-1">
-										<h3 className="text-3xl font-semibold leading-tight text-zinc-900">{entry.title}</h3>
-										<p className="mt-1 line-clamp-2 text-base leading-snug text-zinc-800">
-											{entry.description}
-										</p>
-										{entry.year && <p className="mt-2 text-sm text-zinc-500">{entry.year}</p>}
-									</div>
-								</Link>
-							</article>
-						))}
-					</div>
-
-					<div className="mt-8 flex justify-center">
-						<Link
-							href="/news"
-							className="inline-flex items-center rounded-md px-4 py-2 text-sm font-semibold transition brand-btn-primary"
-						>
-							All news
-						</Link>
+					<div className="rounded-2xl bg-[#F4F4F4] p-5 sm:p-6 md:p-8">
+						<h2 className="mb-5 flex items-center gap-3 text-lg font-bold text-zinc-900">
+							<span className="inline-block h-0.5 w-6 bg-[#E0A75D]" />
+							All movies of this director
+						</h2>
+						<ul className="space-y-2 text-sm text-zinc-700">
+							{director.films.map((film) => (
+								<li key={film.slug}>
+									<Link href={`/films/${film.slug}`} className="font-medium text-zinc-900 hover:underline">
+										{film.originalTitle}
+										{film.englishTitle ? ` (${film.englishTitle})` : ""}
+									</Link>
+								</li>
+							))}
+						</ul>
 					</div>
 				</div>
 			</section>
