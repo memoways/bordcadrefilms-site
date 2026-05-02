@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import sharp from 'sharp';
-import { readAirtableFilms } from '@/app/lib/airtable';
+import { fetchFilmBySlug } from '@/app/lib/airtable';
 
 // Resolves /api/img/film/<slug>/<type>[?w=<width>] to the Airtable image,
 // downscaled to the requested width (or the source max if no `w`).
@@ -66,8 +66,7 @@ function snapWidth(raw: string | null): number {
 // `width` is a key part — each bucket has its own entry.
 const _resolveAndResizeImage = unstable_cache(
   async (slug: string, type: string, width: number): Promise<{ data: string; contentType: string } | null> => {
-    const films = await readAirtableFilms();
-    const film = films.find((f) => f.slug === slug);
+    const film = await fetchFilmBySlug(slug);
     if (!film) return null;
 
     let url: string | undefined;

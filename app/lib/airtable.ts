@@ -319,6 +319,29 @@ const _readAirtableFilms = unstable_cache(
   { revalidate: 900, tags: ['films'] },
 );
 
+/**
+ * Targeted fetch for a single film record by slug.
+ * Used by the image proxy to avoid loading the entire catalog.
+ */
+export const fetchFilmBySlug = cache(async (slug: string): Promise<Film | null> => {
+  try {
+    const records = await fetchAirtableRecords(TABLE_NAME, FILM_FIELDS, null, {
+      filterByFormula: `{slug} = '${slug}'`,
+      maxRecords: 1,
+    });
+
+    if (records.length === 0) return null;
+    
+    // We don't join links/media/crew here as the image proxy only needs 
+    // fields present on the main film record (poster, profile, etc).
+    const films = _processFilmRecords(records);
+    return films[0] || null;
+  } catch (err) {
+    console.error(`[Airtable] Error fetching film by slug ${slug}:`, err);
+    return null;
+  }
+});
+
 // React cache deduplicates within a single render pass — e.g. generateMetadata
 // + the page body both call getFilms(), but unstable_cache is only hit once.
 // The try/catch here is the single point where transient failures degrade
