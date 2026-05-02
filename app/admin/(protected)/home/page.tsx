@@ -1,8 +1,7 @@
-import { HomeClient, type SiteConfigRow, type BCFNumber } from "./HomeClient";
-
-// ── Server data fetch ─────────────────────────────────────────────────────
+import { HomeClient, type SiteConfigRow, type HeroRow, type BCFNumber } from "./HomeClient";
 
 async function getHomeData(): Promise<{
+  hero: HeroRow | null;
   homeAbout: SiteConfigRow | null;
   numbers: BCFNumber[];
 }> {
@@ -25,10 +24,27 @@ async function getHomeData(): Promise<{
     fetchTable("BCFNumbers"),
   ]);
 
+  const heroRow = configRecords.find(
+    (r) => typeof r.fields.section === "string" && r.fields.section === "hero",
+  );
+  const hero: HeroRow | null = heroRow
+    ? {
+        id: heroRow.id,
+        title: String(heroRow.fields.title ?? ""),
+        subtitle: String(heroRow.fields.subtitle ?? ""),
+        description: String(heroRow.fields.description ?? ""),
+        videoUrl: String(heroRow.fields.video_url ?? ""),
+        posterUrl: String(heroRow.fields.poster_url ?? ""),
+        cta1Text: String(heroRow.fields.cta1_text ?? ""),
+        cta1Link: String(heroRow.fields.cta1_link ?? ""),
+        cta2Text: String(heroRow.fields.cta2_text ?? ""),
+        cta2Link: String(heroRow.fields.cta2_link ?? ""),
+      }
+    : null;
+
   const homeRow = configRecords.find(
     (r) => typeof r.fields.section === "string" && r.fields.section === "home_about",
   );
-
   const homeAbout: SiteConfigRow | null = homeRow
     ? {
         id: homeRow.id,
@@ -47,12 +63,11 @@ async function getHomeData(): Promise<{
     label: String(r.fields.label ?? ""),
     description: String(r.fields.description ?? ""),
     order: String(r.fields.order ?? i + 1),
+    public: Boolean(r.fields.public ?? r.fields.publish),
   }));
 
-  return { homeAbout, numbers };
+  return { hero, homeAbout, numbers };
 }
-
-// ── Page (Server Component) ───────────────────────────────────────────────
 
 export const revalidate = 0;
 
