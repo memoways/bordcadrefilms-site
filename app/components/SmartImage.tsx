@@ -19,6 +19,9 @@ export default function SmartImage({
   className,
   skeletonClassName,
   unoptimized,
+  placeholder,
+  blurDataURL,
+  loading,
   ...rest
 }: SmartImageProps) {
   const [loaded, setLoaded] = useState(false);
@@ -49,7 +52,7 @@ export default function SmartImage({
 
   return (
     <>
-      {!loaded && (
+      {!loaded && !placeholder && (
         <div
           className={`absolute inset-0 z-0 animate-pulse ${skeletonClassName ?? "bg-zinc-200"}`.trim()}
           aria-hidden
@@ -63,6 +66,9 @@ export default function SmartImage({
           className={`${className ?? ""} transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`.trim()}
           {...rest}
           unoptimized={unoptimized}
+          placeholder={placeholder}
+          blurDataURL={blurDataURL}
+          loading={loading}
           onLoad={handleLoad}
           onError={handleError}
         />

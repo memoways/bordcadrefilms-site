@@ -197,13 +197,17 @@ export default function FilmGridClient({
       {displayed.length > 0 ? (
         <>
           <section className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 w-full">
-            {displayed.map((film, idx) => (
-              <FilmCard
-                key={film.slug || film.title || idx}
-                film={film}
-                priority={limit ? idx < limit : idx < PAGE_SIZE}
-              />
-            ))}
+            {displayed.map((film, idx) => {
+              const isEager = idx < visibleCount;
+              return (
+                <FilmCard
+                  key={film.slug || film.title || idx}
+                  film={film}
+                  priority={isEager}
+                  loading={isEager ? "eager" : "lazy"}
+                />
+              );
+            })}
           </section>
           {hasMore && (
             <div className="mt-10 flex justify-center">

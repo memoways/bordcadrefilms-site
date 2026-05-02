@@ -32,12 +32,19 @@ const PASSTHROUGH_MAX_BYTES = 3_500_000;
 
 // Allowed `?w=` buckets. Mirrors the values in next.config.ts `imageSizes` so
 // requests proxied via /_next/image map cleanly to the same cache keys we'd
-// hit when called directly. Snapping to a bucket bounds cache cardinality;
+// Snapping to a bucket bounds cache cardinality;
 // otherwise an attacker (or a stray ?w=anything in HTML) could fill the data
 // cache with thousands of near-duplicate variants.
 const WIDTH_BUCKETS = [80, 144, 256, 320, 384, 640, 1024, 2000] as const;
 
+/**
+ * IMPORTANT:
+ * This endpoint is the real bottleneck (Airtable + sharp).
+ * Do NOT rely on Next/Image warmup — warm THIS endpoint directly to populate
+ * the unstable_cache and prevent cold-start latency for users.
+ */
 function snapWidth(raw: string | null): number {
+
   if (!raw) return RESIZE_MAX_WIDTH;
   const n = Number.parseInt(raw, 10);
   if (!Number.isFinite(n) || n <= 0) return RESIZE_MAX_WIDTH;

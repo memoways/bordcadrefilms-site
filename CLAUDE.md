@@ -133,75 +133,56 @@ npm test          # Playwright
 
 ---
 
-## 7. Active sprint — `feat/film-videos-press` (updated 2026-05-02)
+## 7. Active sprint
 
-### `/films` bugs (carry-over)
+Branch + open work tracked here. Keep tight: one section for OPEN bugs, one for OPEN tasks. Move closed/shipped items out — `git log` is canonical for done work.
 
-| # | Status | Description |
-|---|---|---|
-| 1 | 🟠 Likely fixed, unverified | Mobile "Load more" → in-app error. Touched by `e1760d1` + `9e9f523`. Needs real-device repro on Vercel preview. |
-| 2 | 🟢 Closed | Gallery expiry. Fixed by `/api/img` proxy (`5488d45`, `9cabe78`). |
-| 3 | 🟢 Closed | "Load more" latency. Fixed by `9e9f523`, `e1760d1`. |
+Don't add per-task implementation detail here. If a decision is non-obvious, write it as a §1 hard rule (lasts forever) or in a code comment near the call site (lives with the code).
 
-### Shipped on this branch (committed)
+### Lessons (general, keep forever)
+- **ENOSPC produces *partial* writes, not "no change".** Disk-full mid-write can truncate files to 0 bytes or drop trailing imports. Re-read every touched file before declaring success; don't trust `tsc` alone (silent until runtime in client components).
+- **Closed bugs whose fix shaped current architecture belong in §1, not here.** Sprint is a snapshot; §1 is the contract.
 
-**Task 1 — Hero in admin/home** ✅ shipped (`7463bd8`).
-- Admin section above About on `/admin/home`. 9 fields (`title`, `subtitle`, `description`, `video_url`, `poster_url`, `cta1_text/link`, `cta2_text/link`) stored as `section = "hero"` row in `SiteConfig`.
-- Files: `app/lib/hero.ts`, `app/components/HomeHero.tsx`, `app/admin/(protected)/home/page.tsx` + `HomeClient.tsx`.
+### Current branch: `feat/film-videos-press`
 
-**Task 2 — `publish` checkbox on News / Team / BCFNumbers** ✅ shipped (`3668611`).
-- Admin clients (`NewsClient`, `TeamClient`, `home/HomeClient` BCFNumbers section) all surface `public` boolean checkbox.
-- Airtable column added as `publish`.
-- Save payload key is `publish:` in News (`NewsClient.tsx:239`, `:302`), Team (`TeamClient.tsx:276`, `:313`), Home BCFNumbers (`HomeClient.tsx:164`). Local `NewsRow`/`TeamRow`/`BCFNumberRow` types intentionally retain `public: boolean` as in-memory field name — local→Airtable mapping happens at save.
-- Public reads use `public === true || publish === true` dual-field fallback in all five lib functions: `app/lib/news.ts:91`, `app/lib/about.ts:133` (readTeam), `app/lib/about.ts:185` (readFestivalPhotos), `app/lib/home.ts:138` (readBCFNumbers), `app/lib/home.ts:193` (readHomeNews).
-
-**Task 3 — FilmCard subtitle** ✅ shipped (`0d94cf9`). Original title in red (`text-red-600 text-[10px] uppercase`) shown when differs from EN title; country shown after director with `border-l` divider. See `app/components/FilmCard.tsx:39-47`.
-
-**Task 4 — Films UI cleanup** ✅ shipped (`0d94cf9`).
-- Renamed exports to drop `Fixed` suffix in `app/components/{SmartImage,FilmCard,FilmGrid,FilmGridClient}.tsx`. Filenames already clean; consumers used clean local bindings, rename internal-only.
-- Deleted `app/films-optimized/` (dead "Fixed comparison" route — bypassed `/api/img` proxy, linked to retired `/completed-films/` path; zero inbound imports).
-
-**Task 5 — Perf fixes** ✅ shipped (`86b5dd5`).
-- `_readAirtableFilms` 6-table burst split into 2 waves of 3 (was hitting Airtable 5 req/sec cap → 429s on Media table, silently dropping videos/press kits).
-- `/api/img/film` route wraps fetch+sharp in `unstable_cache` (1h, tagged `films`) — eliminates re-download + re-encode on every optimizer cache miss.
-- `SmartImage` auto-sets `unoptimized` for `/api/img/` srcs → skips redundant Vercel optimizer pass + per-source transformation charge.
-
-### ENOSPC recovery (2026-05-01)
-Disk-full event mid-write truncated `news/page.tsx` and `home/page.tsx` to 0 bytes, dropped `useEffect` from three client imports. Recovered by:
-1. Rebuilding both `page.tsx` files with additive Task 1 + Task 2 fields live clients now expect (NOT clean `git checkout HEAD --` — clients had moved on).
-2. Adding `useEffect` to `team/`, `social/`, `about/` `*Client.tsx` imports.
-3. Fixing `NewsClientLoader` dynamic-import — `NewsClient` is default export, so `() => import("./NewsClient")` (not `.then(mod => mod.NewsClient)`).
-
-`tsc` clean as of recovery. Lesson: ENOSPC produces *partial* writes, not "no change" — re-read every touched file before declaring success.
-
-### Other shipped touch-ups
-- `app/api/img/film/[slug]/[type]/route.ts` — `sharp` resize (≤2000 px / q82 mozjpeg) for >3.5 MB or >2000 px upstreams. Adds `sharp@^0.34.5` (`7807c4c`).
-- `AboutCountersClient.tsx` — counter spacing tightened (`gap-x-2`) (`e354403`).
-- `HomeDirectorsPreview.tsx` — "View all directors" promoted to primary CTA (`e354403`).
-- `AdminShell` extracted from layout (`e354403`).
+| Open item | Status |
+|---|---|
+| Mobile "Load more" → in-app error on `/films` | 🟠 Likely fixed by recent grid changes, awaits real-device repro on preview |
 
 ---
 
 ## 8. Coding discipline
 
+Bias toward caution over speed. For trivial tasks, use judgment.
+
 ### Think before coding
+Don't assume. Don't hide confusion. Surface tradeoffs.
 - State assumptions explicit. If uncertain, ask — don't guess silently.
 - If multiple interpretations exist, surface them before picking one.
 - If simpler approach exists, say so. Push back when warranted.
+- If something unclear, stop. Name what's confusing. Ask.
 
 ### Simplicity first
-- Minimum code that solves problem. Nothing speculative.
-- No features, abstractions, or "configurability" beyond what was asked.
+Minimum code that solves problem. Nothing speculative.
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" not requested.
 - No error handling for impossible scenarios.
 - 200 lines that could be 50? Rewrite.
+- Self-check: "Would senior engineer call this overcomplicated?" If yes, simplify.
 
 ### Surgical changes
-- Touch only what task requires. Don't "improve" adjacent code.
+Touch only what you must. Clean up only your own mess.
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things not broken.
 - Match existing style, even if you'd do it differently.
 - If you notice unrelated dead code, mention it — don't delete.
 - Remove imports/variables/functions that *your* changes made unused. Leave pre-existing dead code alone.
+- Test: every changed line traces directly to user's request.
 
 ### Goal-driven execution
+Define success criteria. Loop until verified.
+
 Transform tasks into verifiable goals before starting:
 
 ```
@@ -213,4 +194,10 @@ Transform tasks into verifiable goals before starting:
 - "Add validation" → write tests for invalid inputs, then make them pass.
 - "Refactor X" → ensure tests pass before and after.
 
-Weak criteria ("make it work") require constant clarification. Strong criteria let you loop independently.
+Strong criteria let you loop independent. Weak criteria ("make it work") require constant clarification.
+
+### Working signals
+These rules pay off when:
+- Fewer unnecessary changes in diffs.
+- Fewer rewrites from overcomplication.
+- Clarifying questions come before implementation, not after mistakes.

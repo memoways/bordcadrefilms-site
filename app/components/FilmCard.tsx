@@ -1,9 +1,17 @@
 import Link from "next/link";
-import { filmImageUrl, getValidImageUrl, slugify } from "../lib/utils";
+import { filmImageUrl, getValidImageUrl, slugify, shimmer, toBase64 } from "../lib/utils";
 import type { Film } from "../lib/airtable";
 import SmartImage from "./SmartImage";
 
-export default function FilmCard({ film, priority = false }: { film: Film; priority?: boolean }) {
+export default function FilmCard({ 
+  film, 
+  priority = false,
+  loading = "lazy" 
+}: { 
+  film: Film; 
+  priority?: boolean;
+  loading?: "eager" | "lazy";
+}) {
   // Always generate a fallback slug from title if missing
   const filmSlug = film.slug || (film.title ? slugify(film.title) : undefined);
   const filmUrl = filmSlug ? `/films/${filmSlug}` : undefined;
@@ -26,6 +34,9 @@ export default function FilmCard({ film, priority = false }: { film: Film; prior
             className="object-cover"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 320px"
             priority={priority}
+            loading={loading}
+            placeholder="blur"
+            blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(320, 480))}`}
             style={{ objectFit: "cover", background: "#f4f4f5" }}
             skeletonClassName="bg-linear-to-b from-zinc-100 via-zinc-200/70 to-zinc-100"
           />
