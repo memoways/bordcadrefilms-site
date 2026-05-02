@@ -258,10 +258,17 @@ const _readAirtableFilms = unstable_cache(
     // Films are required; their absence is fatal (cache-skipping).
     // Links / Media enrichment is best-effort: if either fetch fails (e.g. 403,
     // transient outage) the page still renders, just without those sections.
-    const [filmsResult, linksResult, mediaResult, crewResult, peopleResult, festivalResult] = await Promise.allSettled([
+    // Airtable rate-limits at 5 req/sec/base. With pagination on large tables a
+    // 6-way parallel burst easily breaches that on a cold cache, returning 429
+    // — silently swallowed by Promise.allSettled, surfacing as missing media or
+    // crew data on the rendered page. Split into two waves of 3 to keep peak
+    // concurrency comfortably under the cap.
+    const [filmsResult, linksResult, mediaResult] = await Promise.allSettled([
       fetchAirtableRecords(TABLE_NAME, FILM_FIELDS),
       fetchAirtableRecords(SYNC_LINKS_TABLE_ID, undefined, null),
       fetchAirtableRecords(SYNC_MEDIA_TABLE_ID, undefined, null),
+    ]);
+    const [crewResult, peopleResult, festivalResult] = await Promise.allSettled([
       fetchAirtableRecords(CREW_TABLE_ID, CREW_FIELDS, null),
       fetchAirtableRecords(PEOPLE_TABLE_ID, PEOPLE_FIELDS, null),
       fetchAirtableRecords(FESTIVALS_TABLE_NAME, FESTIVAL_FIELDS, FESTIVALS_VIEW_NAME),

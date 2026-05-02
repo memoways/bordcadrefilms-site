@@ -62,7 +62,11 @@ export default function SmartImage({
           alt={alt}
           className={`${className ?? ""} transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`.trim()}
           {...rest}
-          unoptimized={unoptimized}
+          // /api/img/* already returns a sharp-resized blob (≤2000px / q82
+          // mozjpeg). Sending it back through Next's optimizer would re-encode
+          // a near-identical output and double-charge Vercel's per-source
+          // transformation count for zero visual gain.
+          unoptimized={unoptimized ?? (typeof src === "string" && src.startsWith("/api/img/"))}
           onLoad={handleLoad}
           onError={handleError}
         />
