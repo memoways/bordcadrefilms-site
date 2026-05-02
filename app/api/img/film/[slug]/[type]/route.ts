@@ -83,7 +83,14 @@ const _resolveAndResizeImage = unstable_cache(
     if (!url) return null;
 
     const upstream = await fetch(url);
-    if (!upstream.ok) return null;
+    // Throw — not return null — so unstable_cache does NOT memoize this
+    // failure. Airtable signed URLs can transiently 403 under burst load or
+    // mid-rotation; caching null for 1h would freeze a 404 onto a perfectly
+    // valid record. Returned `null` is reserved for genuine data-shape misses
+    // (no film, no field) which are safe to negative-cache.
+    if (!upstream.ok) {
+      throw new Error(`upstream ${upstream.status} for ${slug}/${type}`);
+    }
 
     const upstreamBuf = Buffer.from(await upstream.arrayBuffer());
     const upstreamCT = upstream.headers.get('content-type') ?? 'image/jpeg';
@@ -118,8 +125,27 @@ export async function GET(
   const { slug, type } = await ctx.params;
   const width = snapWidth(new URL(req.url).searchParams.get('w'));
 
-  const result = await _resolveAndResizeImage(slug, type, width);
-  if (!result) return new NextResponse(null, { status: 404 });
+  let result: Awaited<ReturnType<typeof _resolveAndResizeImage>>;
+  try {
+    result = await _resolveAndResizeImage(slug, type, width);
+  } catch {
+    // Transient upstream failure (Airtable 403/429/etc). NOT cached upstream
+    // because _resolveAndResizeImage threw. Tell every layer not to cache
+    // either — next request will retry and likely succeed.
+    return new NextResponse(null, {
+      status: 502,
+      headers: { 'cache-control': 'no-store' },
+    });
+  }
+
+  if (!result) {
+    // Genuine miss — film/slug/field doesn't exist. Negative-cache for 5 min
+    // so SmartImage retries and downstream caches don't hammer the function.
+    return new NextResponse(null, {
+      status: 404,
+      headers: { 'cache-control': 'public, max-age=300, s-maxage=300' },
+    });
+  }
 
   const buf = Buffer.from(result.data, 'base64');
   return new NextResponse(new Uint8Array(buf), {

@@ -198,7 +198,12 @@ export default function FilmGridClient({
         <>
           <section className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 w-full">
             {displayed.map((film, idx) => {
-              const isEager = idx < visibleCount;
+              // Only the initial batch is above-the-fold on first paint.
+              // Marking later (Load-More) cards `priority`+`eager` re-emits
+              // <link rel=preload> on every click and saturates HTTP/2 +
+              // serverless concurrency for cards that are scrolled into view
+              // anyway via lazy loading.
+              const isEager = idx < PAGE_SIZE;
               return (
                 <FilmCard
                   key={film.slug || film.title || idx}
